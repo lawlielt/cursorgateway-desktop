@@ -8,5 +8,6 @@ contextBridge.exposeInMainWorld('gateway', {
   status: () => ipcRenderer.invoke('gateway:status'),
   getConfig: () => ipcRenderer.invoke('gateway:get-config'),
   setPort: (port) => ipcRenderer.invoke('gateway:set-port', port),
+  importClaudeConfig: () => ipcRenderer.invoke('gateway:import-claude'),
   baseURL: `http://127.0.0.1:${process.env.PORT || '3010'}`
 });

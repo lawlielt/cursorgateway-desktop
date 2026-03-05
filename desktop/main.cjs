@@ -232,6 +232,34 @@ async function check(pathname) {
 
 
 
+
+function writeClaudeCodeConfig() {
+  try {
+    const home = process.env.HOME || app.getPath('home');
+    const claudeDir = path.join(home, '.claude');
+    if (!fs.existsSync(claudeDir)) fs.mkdirSync(claudeDir, { recursive: true });
+
+    const settingsPath = path.join(claudeDir, 'settings.json');
+    let conf = {};
+    if (fs.existsSync(settingsPath)) {
+      try { conf = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); } catch { conf = {}; }
+      const backup = path.join(claudeDir, `settings.backup.${Date.now()}.json`);
+      fs.writeFileSync(backup, JSON.stringify(conf, null, 2), 'utf8');
+    }
+
+    conf.env = conf.env || {};
+    conf.env.ANTHROPIC_BASE_URL = getBaseURL();
+    conf.env.ANTHROPIC_API_KEY = conf.env.ANTHROPIC_API_KEY || 'unused';
+    conf.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = conf.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC || '1';
+    conf.model = conf.model || 'claude-4.5-sonnet';
+
+    fs.writeFileSync(settingsPath, JSON.stringify(conf, null, 2), 'utf8');
+    return { ok: true, path: settingsPath, baseURL: getBaseURL() };
+  } catch (e) {
+    return { ok: false, error: String(e) };
+  }
+}
+
 function openPanel() {
   if (win && !win.isDestroyed()) {
     win.show();
@@ -261,6 +289,10 @@ function refreshMenu() {
     { label: '停止服务', enabled: running, click: stopServer },
     { type: 'separator' },
     { label: tokenStatus().ok ? '✅ Cursor 已登录' : 'Cursor 登录', click: runLoginFlow },
+    { label: '一键导入 Claude Code 配置', click: async () => {
+      const r = writeClaudeCodeConfig();
+      dialog.showMessageBox({ message: r.ok ? `已写入: ${r.path}\nBaseURL: ${r.baseURL}` : `导入失败: ${r.error}` });
+    } },
     { label: `当前端口: ${currentPort}`, enabled: false },
     { label: '检查 /health', click: async () => {
       const r = await check('/health');
@@ -289,6 +321,7 @@ app.whenReady().then(() => {
     return { token: t, health: h, port: currentPort, baseURL: getBaseURL() };
   });
   ipcMain.handle('gateway:get-config', async () => ({ port: currentPort, baseURL: getBaseURL() }));
+  ipcMain.handle('gateway:import-claude', async () => writeClaudeCodeConfig());
   ipcMain.handle('gateway:set-port', async (_e, portVal) => {
     const p = String(portVal || '').trim();
     if (!/^\d{2,5}$/.test(p)) return { ok: false, error: '端口格式不正确' };

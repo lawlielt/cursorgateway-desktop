@@ -92,6 +92,7 @@
       <button class="good" onclick="start()">启动服务</button>
       <button class="warn" onclick="stop()">停止服务</button>
       <button class="primary" onclick="login()">Cursor 登录</button>
+      <button onclick="importClaude()">一键导入 Claude Code 配置</button>
     </div>
     <div class="row">
       <button onclick="status()">状态检测</button>
@@ -133,6 +134,12 @@
     }
     async function stop(){ await window.gateway.stop(); document.getElementById('out').textContent='已请求停止'; }
     async function login(){ await window.gateway.login(); document.getElementById('out').textContent='已启动登录流程，请按弹窗结果操作'; }
+    async function importClaude(){
+      const out = document.getElementById('out');
+      out.textContent = '正在导入 Claude Code 配置...';
+      const r = await window.gateway.importClaudeConfig();
+      out.textContent = r.ok ? `导入成功\n文件: ${r.path}\nBASE_URL: ${r.baseURL}` : `导入失败: ${r.error}`;
+    }
 
     async function status(){
       const out = document.getElementById('out');
