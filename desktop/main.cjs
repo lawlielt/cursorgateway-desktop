@@ -19,6 +19,25 @@ const baseURL = `http://127.0.0.1:${port}`;
 const tokenFile = path.join(appRoot, '.cursor-token');
 const runtimeCwd = process.resourcesPath || process.cwd();
 
+
+process.on('uncaughtException', (err) => {
+  try {
+    const f = path.join(app.getPath('userData'), 'desktop-crash.log');
+    fs.appendFileSync(f, `[${new Date().toISOString()}] uncaughtException: ${err?.stack || err}
+`);
+  } catch {}
+  console.error('[desktop] uncaughtException', err);
+});
+process.on('unhandledRejection', (err) => {
+  try {
+    const f = path.join(app.getPath('userData'), 'desktop-crash.log');
+    fs.appendFileSync(f, `[${new Date().toISOString()}] unhandledRejection: ${err?.stack || err}
+`);
+  } catch {}
+  console.error('[desktop] unhandledRejection', err);
+});
+
+
 function prefFilePath() {
   return path.join(app.getPath('userData'), 'prefs.json');
 }
@@ -186,7 +205,7 @@ function createSplash() {
     minimizable: false,
     maximizable: false,
     show: false,
-    alwaysOnTop: true,
+    alwaysOnTop: false,
     title: 'Cursor Gateway Desktop',
     webPreferences: { contextIsolation: true, nodeIntegration: false }
   });
@@ -262,6 +281,8 @@ app.whenReady().then(() => {
   refreshMenu();
   startServer();
 
+  setTimeout(() => { closeSplash(); }, 4500);
+
   setTimeout(() => {
     closeSplash();
     openPanel();
@@ -270,12 +291,7 @@ app.whenReady().then(() => {
     if (!firstRunGuideShown && !guideDismissed && !t.ok) {
       firstRunGuideShown = true;
       openPanel();
-      dialog.showMessageBox({
-        type: 'info',
-        title: '首次使用引导',
-        message: '检测到尚未登录 Cursor',
-        detail: '请按顺序操作：\n1) 点击【Cursor 登录】\n2) 点击【状态检测】确认 token 与 /health 正常'
-      });
+      // non-blocking guide: open panel only to avoid startup freeze in some macOS environments
       setGuideDismissed(true);
     }
   }, 1400);
