@@ -5,6 +5,7 @@ const fs = require('fs');
 
 let tray;
 let win;
+let splash;
 let serverProc = null;
 let loginProc = null;
 let firstRunGuideShown = false;
@@ -173,6 +174,30 @@ async function check(pathname) {
   }
 }
 
+
+function createSplash() {
+  if (splash && !splash.isDestroyed()) return;
+  splash = new BrowserWindow({
+    width: 360,
+    height: 220,
+    frame: false,
+    resizable: false,
+    movable: true,
+    minimizable: false,
+    maximizable: false,
+    show: true,
+    alwaysOnTop: true,
+    title: 'Cursor Gateway Desktop',
+    webPreferences: { contextIsolation: true, nodeIntegration: false }
+  });
+  splash.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(`<!doctype html><html><body style="margin:0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;align-items:center;justify-content:center;background:#0f172a;color:#e2e8f0;"><div style="text-align:center"><div style="font-size:18px;font-weight:600;margin-bottom:10px">Cursor Gateway Desktop</div><div style="font-size:13px;opacity:.8">正在启动服务，请稍候…</div></div></body></html>`));
+}
+
+function closeSplash() {
+  if (splash && !splash.isDestroyed()) splash.close();
+  splash = null;
+}
+
 function openPanel() {
   if (win && !win.isDestroyed()) {
     win.show();
@@ -217,6 +242,8 @@ function refreshMenu() {
 }
 
 app.whenReady().then(() => {
+  createSplash();
+
   ipcMain.handle('gateway:check', (_, p) => check(p || '/health'));
   ipcMain.handle('gateway:start', () => { startServer(); return { ok: true }; });
   ipcMain.handle('gateway:stop', () => { stopServer(); return { ok: true }; });
@@ -254,4 +281,5 @@ app.whenReady().then(() => {
 app.on('before-quit', () => {
   stopServer();
   if (loginProc) loginProc.kill('SIGTERM');
+  closeSplash();
 });
