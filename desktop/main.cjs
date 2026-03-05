@@ -12,9 +12,11 @@ let firstRunGuideShown = false;
 const appRoot = path.resolve(__dirname, '..');
 const serverEntry = path.join(appRoot, 'src', 'app.js');
 const loginEntry = path.join(appRoot, 'src', 'tool', 'cursorLogin.js');
+const packagedLoginEntry = path.join(process.resourcesPath || '', 'app.asar', 'src', 'tool', 'cursorLogin.js');
 const port = process.env.PORT || '3010';
 const baseURL = `http://127.0.0.1:${port}`;
 const tokenFile = path.join(appRoot, '.cursor-token');
+const runtimeCwd = process.resourcesPath || process.cwd();
 
 function prefFilePath() {
   return path.join(app.getPath('userData'), 'prefs.json');
@@ -60,7 +62,7 @@ function tokenStatus() {
 
 function spawnNodeScript(entry) {
   return spawn(process.execPath, [entry], {
-    cwd: appRoot,
+    cwd: runtimeCwd,
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: '1',
@@ -123,7 +125,8 @@ function runLoginFlow() {
     return;
   }
 
-  loginProc = spawnNodeScript(loginEntry);
+  const loginScript = app.isPackaged ? packagedLoginEntry : loginEntry;
+  loginProc = spawnNodeScript(loginScript);
   let out = '';
   let opened = false;
 
