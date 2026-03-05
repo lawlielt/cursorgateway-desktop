@@ -17,6 +17,7 @@ const port = process.env.PORT || '3010';
 const baseURL = `http://127.0.0.1:${port}`;
 const tokenFile = path.join(appRoot, '.cursor-token');
 const runtimeCwd = process.resourcesPath || process.cwd();
+const runtimeTokenFile = path.join(app.getPath('userData'), '.cursor-token');
 
 
 process.on('uncaughtException', (err) => {
@@ -70,8 +71,9 @@ function setGuideDismissed(v) {
 
 function tokenStatus() {
   try {
-    if (!fs.existsSync(tokenFile)) return { ok: false, msg: '未检测到 .cursor-token，请先点击“Cursor 登录”。' };
-    const t = fs.readFileSync(tokenFile, 'utf8').trim();
+    const f = fs.existsSync(runtimeTokenFile) ? runtimeTokenFile : tokenFile;
+    if (!fs.existsSync(f)) return { ok: false, msg: '未检测到 .cursor-token，请先点击“Cursor 登录”。' };
+    const t = fs.readFileSync(f, 'utf8').trim();
     if (!t) return { ok: false, msg: '.cursor-token 为空，请重新登录。' };
     return { ok: true, msg: '已检测到有效 token。' };
   } catch (e) {
@@ -88,6 +90,7 @@ function spawnNodeScript(entry) {
       PORT: String(port),
       CURSOR_GATEWAY_SESSIONS_DIR: path.join(app.getPath('userData'), 'sessions'),
       CURSOR_GATEWAY_LOG_FILE: path.join(app.getPath('userData'), 'server.log'),
+      CURSOR_GATEWAY_TOKEN_FILE: runtimeTokenFile,
       CURSOR_GATEWAY_TOKEN_FILE: path.join(app.getPath('userData'), '.cursor-token')
     },
     stdio: ['ignore', 'pipe', 'pipe']
@@ -101,6 +104,7 @@ function startServerEmbedded() {
   process.env.PORT = String(port);
   process.env.CURSOR_GATEWAY_SESSIONS_DIR = path.join(app.getPath('userData'), 'sessions');
   process.env.CURSOR_GATEWAY_LOG_FILE = path.join(app.getPath('userData'), 'server.log');
+  process.env.CURSOR_GATEWAY_TOKEN_FILE = runtimeTokenFile;
   try {
     require(serverEntry);
     serverProc = { embedded: true, kill: () => {} };
