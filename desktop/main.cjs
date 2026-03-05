@@ -7,6 +7,7 @@ let tray;
 let win;
 let serverProc = null;
 let loginProc = null;
+let firstRunGuideShown = false;
 
 const appRoot = path.resolve(__dirname, '..');
 const serverEntry = path.join(appRoot, 'src', 'app.js');
@@ -145,6 +146,20 @@ app.whenReady().then(() => {
   tray.on('click', openPanel);
   refreshMenu();
   startServer();
+
+  setTimeout(() => {
+    const t = tokenStatus();
+    if (!firstRunGuideShown && !t.ok) {
+      firstRunGuideShown = true;
+      dialog.showMessageBox({
+        type: "info",
+        title: "首次使用引导",
+        message: "检测到尚未登录 Cursor",
+        detail: "请按顺序操作：\n1) 点击托盘图标打开控制面板\n2) 点击【Cursor 登录】\n3) 点击【状态检测】确认 token 与 /health 正常"
+      });
+      openPanel();
+    }
+  }, 1200);
 });
 
 app.on('before-quit', () => {
