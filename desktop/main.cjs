@@ -5,7 +5,6 @@ const fs = require('fs');
 
 let tray;
 let win;
-let splash;
 let serverProc = null;
 let loginProc = null;
 let firstRunGuideShown = false;
@@ -195,29 +194,6 @@ async function check(pathname) {
 }
 
 
-function createSplash() {
-  if (splash && !splash.isDestroyed()) return;
-  splash = new BrowserWindow({
-    width: 360,
-    height: 220,
-    frame: false,
-    resizable: false,
-    movable: true,
-    minimizable: false,
-    maximizable: false,
-    show: false,
-    alwaysOnTop: false,
-    title: 'Cursor Gateway Desktop',
-    webPreferences: { contextIsolation: true, nodeIntegration: false }
-  });
-  splash.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(`<!doctype html><html><head><meta charset=\"utf-8\"><style>body{margin:0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;align-items:center;justify-content:center;background:#0f172a;color:#e2e8f0} .card{width:280px;text-align:center} .t{font-size:18px;font-weight:600;margin-bottom:10px} .s{font-size:13px;opacity:.85;margin-bottom:14px} .bar{height:8px;background:#1f2937;border-radius:999px;overflow:hidden} .fill{height:100%;width:40%;background:linear-gradient(90deg,#22d3ee,#6366f1);border-radius:999px;animation:move 1.2s ease-in-out infinite} @keyframes move{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}</style></head><body><div class=\"card\"><div class=\"t\">Cursor Gateway Desktop</div><div class=\"s\">正在启动服务，请稍候…</div><div class=\"bar\"><div class=\"fill\"></div></div></div></body></html>`));
-  splash.once('ready-to-show', () => { splash.show(); splash.focus(); });
-}
-
-function closeSplash() {
-  if (splash && !splash.isDestroyed()) splash.close();
-  splash = null;
-}
 
 function openPanel() {
   if (win && !win.isDestroyed()) {
@@ -263,8 +239,6 @@ function refreshMenu() {
 }
 
 app.whenReady().then(() => {
-  createSplash();
-
   ipcMain.handle('gateway:check', (_, p) => check(p || '/health'));
   ipcMain.handle('gateway:start', () => { startServer(); return { ok: true }; });
   ipcMain.handle('gateway:stop', () => { stopServer(); return { ok: true }; });
@@ -281,18 +255,15 @@ app.whenReady().then(() => {
   tray.on('click', openPanel);
   refreshMenu();
   startServer();
-
-  setTimeout(() => { closeSplash(); }, 4500);
+  openPanel();
 
   setTimeout(() => {
-    closeSplash();
     openPanel();
     const t = tokenStatus();
     const guideDismissed = getGuideDismissed();
     if (!firstRunGuideShown && !guideDismissed && !t.ok) {
       firstRunGuideShown = true;
-      openPanel();
-      // non-blocking guide: open panel only to avoid startup freeze in some macOS environments
+      // panel already opened; keep non-blocking guide behavior
       setGuideDismissed(true);
     }
   }, 1400);
@@ -301,5 +272,4 @@ app.whenReady().then(() => {
 app.on('before-quit', () => {
   stopServer();
   if (loginProc) loginProc.kill('SIGTERM');
-  closeSplash();
 });

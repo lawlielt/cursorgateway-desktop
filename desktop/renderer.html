@@ -7,10 +7,17 @@
     body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 16px; }
     button { margin-right: 8px; margin-bottom: 8px; padding: 8px 12px; }
     pre { background: #111; color: #eee; padding: 10px; border-radius: 8px; white-space: pre-wrap; }
+  @keyframes move{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
   </style>
 </head>
 <body>
   <h2>Cursor Gateway Desktop</h2>
+  <div id="loadingWrap" style="margin:10px 0 14px 0;">
+    <div style="font-size:12px;opacity:.8;margin-bottom:6px">初始化中...</div>
+    <div style="height:8px;background:#1f2937;border-radius:999px;overflow:hidden">
+      <div id="loadingBar" style="height:100%;width:40%;background:linear-gradient(90deg,#22d3ee,#6366f1);border-radius:999px;animation:move 1.2s ease-in-out infinite"></div>
+    </div>
+  </div>
   <p id="base"></p>
   <div>
     <button onclick="start()">启动服务</button>
@@ -26,6 +33,12 @@
 
   <script>
     document.getElementById('base').textContent = `Base URL: ${window.gateway.baseURL}/v1`;
+    setTimeout(async ()=>{
+      const s = await window.gateway.status();
+      if (s?.health?.ok || s?.health?.status===200) {
+        document.getElementById('loadingWrap').style.display='none';
+      }
+    }, 600);
     async function start(){ await window.gateway.start(); document.getElementById('out').textContent='已请求启动'; }
     async function stop(){ await window.gateway.stop(); document.getElementById('out').textContent='已请求停止'; }
     async function login(){ await window.gateway.login(); document.getElementById('out').textContent='已启动登录流程，请按弹窗结果操作'; }
