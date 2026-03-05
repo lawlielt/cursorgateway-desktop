@@ -18,6 +18,7 @@ const baseURL = `http://127.0.0.1:${port}`;
 const tokenFile = path.join(appRoot, '.cursor-token');
 const runtimeCwd = process.resourcesPath || process.cwd();
 const runtimeTokenFile = path.join(app.getPath('userData'), '.cursor-token');
+const legacyTokenFile = path.join(process.env.HOME || '', 'Library', 'Application Support', 'cursor-gateway', '.cursor-token');
 
 
 process.on('uncaughtException', (err) => {
@@ -71,7 +72,7 @@ function setGuideDismissed(v) {
 
 function tokenStatus() {
   try {
-    const f = fs.existsSync(runtimeTokenFile) ? runtimeTokenFile : tokenFile;
+    const f = fs.existsSync(runtimeTokenFile) ? runtimeTokenFile : (fs.existsSync(legacyTokenFile) ? legacyTokenFile : tokenFile);
     if (!fs.existsSync(f)) return { ok: false, msg: '未检测到 .cursor-token，请先点击“Cursor 登录”。' };
     const t = fs.readFileSync(f, 'utf8').trim();
     if (!t) return { ok: false, msg: '.cursor-token 为空，请重新登录。' };
@@ -189,7 +190,10 @@ function runLoginFlow() {
 async function check(pathname) {
   const url = `${baseURL}${pathname}`;
   try {
-    const r = await fetch(url);
+    const tokenPath = fs.existsSync(runtimeTokenFile) ? runtimeTokenFile : (fs.existsSync(legacyTokenFile) ? legacyTokenFile : null);
+    const token = tokenPath ? fs.readFileSync(tokenPath, 'utf8').trim() : '';
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const r = await fetch(url, { headers });
     const text = await r.text();
     return { ok: true, url, status: r.status, body: text };
   } catch (e) {
