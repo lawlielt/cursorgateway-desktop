@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 // 会话日志目录
-const SESSIONS_DIR = path.join(__dirname, '../..', 'sessions');
+const SESSIONS_DIR = process.env.CURSOR_GATEWAY_SESSIONS_DIR || path.join(process.cwd(), 'sessions');
 
 // 确保目录存在
 if (!fs.existsSync(SESSIONS_DIR)) {
