@@ -2,11 +2,13 @@ const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, dialog } = require
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const Store = require('electron-store');
 
 let tray;
 let win;
 let serverProc = null;
 let loginProc = null;
+const store = new Store({ name: 'cursor-gateway-desktop' });
 let firstRunGuideShown = false;
 
 const appRoot = path.resolve(__dirname, '..');
@@ -149,7 +151,8 @@ app.whenReady().then(() => {
 
   setTimeout(() => {
     const t = tokenStatus();
-    if (!firstRunGuideShown && !t.ok) {
+    const guideDismissed = store.get('guideDismissed', false);
+    if (!firstRunGuideShown && !guideDismissed && !t.ok) {
       firstRunGuideShown = true;
       dialog.showMessageBox({
         type: "info",
@@ -158,6 +161,7 @@ app.whenReady().then(() => {
         detail: "请按顺序操作：\n1) 点击托盘图标打开控制面板\n2) 点击【Cursor 登录】\n3) 点击【状态检测】确认 token 与 /health 正常"
       });
       openPanel();
+      store.set('guideDismissed', true);
     }
   }, 1200);
 });
