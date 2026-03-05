@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Token 存储文件路径（项目根目录下的 .cursor-token）
-const TOKEN_FILE = path.join(__dirname, '../..', '.cursor-token');
+const TOKEN_FILE = process.env.CURSOR_GATEWAY_TOKEN_FILE || path.join(process.cwd(), '.cursor-token');
 
 /**
  * 保存 Token 到本地文件
