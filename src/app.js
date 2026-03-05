@@ -29,7 +29,15 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.use(morgan(process.env.MORGAN_FORMAT ?? 'tiny'));
 
+app.get('/health', (_req, res) => {
+    res.json({ ok: true, service: 'cursor-gateway-desktop', port: config.port, time: new Date().toISOString() });
+});
+
 app.use("/", routes);
+
+app.use((req, res) => {
+    res.status(404).json({ error: 'Not Found', path: req.path });
+});
 
 // Unified error handling (must be registered after routes)
 app.use(errorHandler);
