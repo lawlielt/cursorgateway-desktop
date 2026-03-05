@@ -65,7 +65,8 @@ function spawnNodeScript(entry) {
       ...process.env,
       ELECTRON_RUN_AS_NODE: '1',
       PORT: String(port),
-      CURSOR_GATEWAY_SESSIONS_DIR: path.join(app.getPath('userData'), 'sessions')
+      CURSOR_GATEWAY_SESSIONS_DIR: path.join(app.getPath('userData'), 'sessions'),
+      CURSOR_GATEWAY_LOG_FILE: path.join(app.getPath('userData'), 'server.log')
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });

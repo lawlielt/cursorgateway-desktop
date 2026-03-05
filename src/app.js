@@ -10,7 +10,7 @@ const { hasToken, TOKEN_FILE } = require('./utils/tokenManager');
 const { errorHandler } = require('./middleware/errorHandler');
 
 // Tee all console output to a fixed log file
-const LOG_FILE = path.join(__dirname, '..', 'server.log');
+const LOG_FILE = process.env.CURSOR_GATEWAY_LOG_FILE || path.join(process.cwd(), 'server.log');
 const logStream = fs.createWriteStream(LOG_FILE, { flags: 'a' });
 
 function teeWrite(orig, stream) {
