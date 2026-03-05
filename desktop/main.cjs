@@ -72,32 +72,14 @@ function spawnNodeScript(entry) {
   });
 }
 
-function startServerEmbedded() {
-  if (serverProc) return;
-  process.env.PORT = String(port);
-  process.env.CURSOR_GATEWAY_SESSIONS_DIR = path.join(app.getPath('userData'), 'sessions');
-  process.env.CURSOR_GATEWAY_LOG_FILE = path.join(app.getPath('userData'), 'server.log');
-  try {
-    require(serverEntry);
-    serverProc = { embedded: true, kill: () => {} };
-    refreshMenu();
-    console.log('[desktop] Server started in embedded mode');
-  } catch (e) {
-    console.error('[desktop] Embedded server start failed:', e);
-  }
-}
 
 function startServer() {
   if (serverProc) return;
-  // packaged app: prefer embedded mode to avoid child-process/ELECTRON_RUN_AS_NODE quirks
-  if (app.isPackaged) {
-    startServerEmbedded();
-    return;
-  }
   serverProc = spawnNodeScript(serverEntry);
   serverProc.stdout.on('data', d => console.log(`[server] ${d}`));
   serverProc.stderr.on('data', d => console.error(`[server] ${d}`));
-  serverProc.on('exit', () => {
+  serverProc.on('exit', (code, sig) => {
+    console.log(`[server] exited code=${code} sig=${sig}`);
     serverProc = null;
     refreshMenu();
   });
@@ -106,10 +88,6 @@ function startServer() {
 
 function stopServer() {
   if (!serverProc) return;
-  if (serverProc.embedded) {
-    dialog.showMessageBox({ message: '嵌入模式下暂不支持停止服务，请退出应用后重启。' });
-    return;
-  }
   serverProc.kill('SIGTERM');
   serverProc = null;
   refreshMenu();
