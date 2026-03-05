@@ -223,7 +223,7 @@ function refreshMenu() {
     { label: '启动服务', enabled: !running, click: startServer },
     { label: '停止服务', enabled: running, click: stopServer },
     { type: 'separator' },
-    { label: 'Cursor 登录', click: runLoginFlow },
+    { label: tokenStatus().ok ? '✅ Cursor 已登录' : 'Cursor 登录', click: runLoginFlow },
     { label: '检查 /health', click: async () => {
       const r = await check('/health');
       dialog.showMessageBox({ message: `${r.url}\n\n${r.body.slice(0,3500)}` });

@@ -19,6 +19,7 @@
     </div>
   </div>
   <p id="base"></p>
+  <p id="auth" style="font-size:13px;">登录状态检测中...</p>
   <div>
     <button onclick="start()">启动服务</button>
     <button onclick="stop()">停止服务</button>
@@ -33,12 +34,7 @@
 
   <script>
     document.getElementById('base').textContent = `Base URL: ${window.gateway.baseURL}/v1`;
-    setTimeout(async ()=>{
-      const s = await window.gateway.status();
-      if (s?.health?.ok || s?.health?.status===200) {
-        document.getElementById('loadingWrap').style.display='none';
-      }
-    }, 600);
+    setTimeout(refreshStatus, 600); setInterval(refreshStatus, 5000);
     async function start(){ await window.gateway.start(); document.getElementById('out').textContent='已请求启动'; }
     async function stop(){ await window.gateway.stop(); document.getElementById('out').textContent='已请求停止'; }
     async function login(){ await window.gateway.login(); document.getElementById('out').textContent='已启动登录流程，请按弹窗结果操作'; }
@@ -49,6 +45,22 @@
       const guide = s.token.ok ? '✅ Token 已就绪，可直接调用 API。' : '⚠️ 未登录，请先点“Cursor 登录”。';
       out.textContent = `${guide}\n\nToken: ${s.token.msg}\nHealth: [${s.health.status}] ${s.health.body}`;
     }
+    async function refreshStatus(){
+      const s = await window.gateway.status();
+      const el = document.getElementById('auth');
+      if (s?.token?.ok) {
+        el.textContent = '✅ 已登录 Cursor';
+        el.style.color = '#16a34a';
+      } else {
+        el.textContent = '⚠️ 未登录 Cursor（请点击“Cursor 登录”）';
+        el.style.color = '#f59e0b';
+      }
+      if (s?.health?.ok || s?.health?.status===200) {
+        const w = document.getElementById('loadingWrap');
+        if (w) w.style.display='none';
+      }
+    }
+
     async function check(path){
       const out = document.getElementById('out');
       out.textContent = '请求中...';
