@@ -190,7 +190,7 @@ function createSplash() {
     title: 'Cursor Gateway Desktop',
     webPreferences: { contextIsolation: true, nodeIntegration: false }
   });
-  splash.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(`<!doctype html><html><body style="margin:0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;align-items:center;justify-content:center;background:#0f172a;color:#e2e8f0;"><div style="text-align:center"><div style="font-size:18px;font-weight:600;margin-bottom:10px">Cursor Gateway Desktop</div><div style="font-size:13px;opacity:.8">正在启动服务，请稍候…</div></div></body></html>`));
+  splash.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(`<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;align-items:center;justify-content:center;background:#0f172a;color:#e2e8f0} .card{width:280px;text-align:center} .t{font-size:18px;font-weight:600;margin-bottom:10px} .s{font-size:13px;opacity:.85;margin-bottom:14px} .bar{height:8px;background:#1f2937;border-radius:999px;overflow:hidden} .fill{height:100%;width:40%;background:linear-gradient(90deg,#22d3ee,#6366f1);border-radius:999px;animation:move 1.2s ease-in-out infinite} @keyframes move{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}</style></head><body><div class="card"><div class="t">Cursor Gateway Desktop</div><div class="s">正在启动服务，请稍候…</div><div class="bar"><div class="fill"></div></div></div></body></html>`));
 }
 
 function closeSplash() {
