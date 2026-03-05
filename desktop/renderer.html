@@ -4,42 +4,119 @@
   <meta charset="utf-8"/>
   <title>Cursor Gateway Desktop</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 16px; }
-    button { margin-right: 8px; margin-bottom: 8px; padding: 8px 12px; }
-    pre { background: #111; color: #eee; padding: 10px; border-radius: 8px; white-space: pre-wrap; }
-  @keyframes move{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
+    :root{
+      --bg:#0b1020;
+      --card:#111933;
+      --muted:#94a3b8;
+      --text:#e2e8f0;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --primary:#6366f1;
+      --primary2:#22d3ee;
+      --border:#1f2a44;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+      background: radial-gradient(1200px 600px at 20% -20%, #1d2a4a 0%, var(--bg) 45%);
+      color:var(--text);
+      padding:18px;
+    }
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px solid var(--border);
+      border-radius:14px;
+      box-shadow:0 10px 30px rgba(0,0,0,.35);
+      padding:16px;
+      margin-bottom:12px;
+    }
+    h2{margin:0 0 10px 0;font-size:20px;letter-spacing:.2px}
+    p{margin:6px 0}
+    .muted{color:var(--muted);font-size:12px}
+    .status{font-size:13px;font-weight:600}
+    .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    button{
+      border:1px solid #334155;
+      background:#17213d;
+      color:#e5e7eb;
+      border-radius:10px;
+      padding:8px 12px;
+      cursor:pointer;
+      font-size:13px;
+      transition:.15s ease;
+    }
+    button:hover{transform:translateY(-1px);background:#1c2a4f}
+    button.primary{border-color:#4f46e5;background:linear-gradient(90deg,var(--primary),#4f46e5)}
+    button.good{border-color:#16a34a;background:#14532d}
+    button.warn{border-color:#b45309;background:#78350f}
+    .loadingWrap{margin-top:10px}
+    .bar{height:8px;background:#1f2937;border-radius:999px;overflow:hidden}
+    .fill{height:100%;width:40%;background:linear-gradient(90deg,var(--primary2),var(--primary));border-radius:999px;animation:move 1.2s ease-in-out infinite}
+    @keyframes move{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
+    pre{
+      margin:0;
+      background:#0a1228;
+      border:1px solid var(--border);
+      color:#dbeafe;
+      padding:12px;
+      border-radius:12px;
+      min-height:190px;
+      white-space:pre-wrap;
+      line-height:1.45;
+      font-size:12px;
+    }
+    .dot{display:inline-block;width:8px;height:8px;border-radius:999px;margin-right:6px;background:#64748b}
+    .dot.ok{background:var(--ok)}
+    .dot.warn{background:var(--warn)}
   </style>
 </head>
 <body>
-  <h2>Cursor Gateway Desktop</h2>
-  <div id="loadingWrap" style="margin:10px 0 14px 0;">
-    <div style="font-size:12px;opacity:.8;margin-bottom:6px">初始化中...</div>
-    <div style="height:8px;background:#1f2937;border-radius:999px;overflow:hidden">
-      <div id="loadingBar" style="height:100%;width:40%;background:linear-gradient(90deg,#22d3ee,#6366f1);border-radius:999px;animation:move 1.2s ease-in-out infinite"></div>
+  <div class="card">
+    <h2>Cursor Gateway Desktop</h2>
+    <p id="base" class="muted"></p>
+    <p id="auth" class="status"><span class="dot"></span>登录状态检测中...</p>
+
+    <div id="loadingWrap" class="loadingWrap">
+      <p class="muted">初始化中...</p>
+      <div class="bar"><div id="loadingBar" class="fill"></div></div>
     </div>
   </div>
-  <p id="base"></p>
-  <p id="auth" style="font-size:13px;">登录状态检测中...</p>
-  <div>
-    <button onclick="start()">启动服务</button>
-    <button onclick="stop()">停止服务</button>
-    <button onclick="login()">Cursor 登录</button>
-    <button onclick="status()">状态检测</button>
+
+  <div class="card">
+    <div class="row">
+      <button class="good" onclick="start()">启动服务</button>
+      <button class="warn" onclick="stop()">停止服务</button>
+      <button class="primary" onclick="login()">Cursor 登录</button>
+      <button onclick="status()">状态检测</button>
+    </div>
+    <div class="row">
+      <button onclick="check('/health')">检查 /health</button>
+      <button onclick="check('/v1/models')">检查 /v1/models</button>
+    </div>
   </div>
-  <div>
-    <button onclick="check('/health')">检查 /health</button>
-    <button onclick="check('/v1/models')">检查 /v1/models</button>
+
+  <div class="card">
+    <pre id="out">准备就绪（首次使用建议先点“状态检测”）</pre>
   </div>
-  <pre id="out">准备就绪（首次使用建议先点“状态检测”）</pre>
 
   <script>
     document.getElementById('base').textContent = `Base URL: ${window.gateway.baseURL}`;
     const BOOT_MIN_MS = 2500;
     const bootAt = Date.now();
-    setTimeout(refreshStatus, 600); setInterval(refreshStatus, 5000);
+    setTimeout(refreshStatus, 600);
+    setInterval(refreshStatus, 5000);
+
+    function setAuth(ok, text){
+      const el = document.getElementById('auth');
+      el.innerHTML = `<span class="dot ${ok ? 'ok':'warn'}"></span>${text}`;
+      el.style.color = ok ? '#22c55e' : '#f59e0b';
+    }
+
     async function start(){ await window.gateway.start(); document.getElementById('out').textContent='已请求启动'; }
     async function stop(){ await window.gateway.stop(); document.getElementById('out').textContent='已请求停止'; }
     async function login(){ await window.gateway.login(); document.getElementById('out').textContent='已启动登录流程，请按弹窗结果操作'; }
+
     async function status(){
       const out = document.getElementById('out');
       out.textContent = '检测中...';
@@ -47,15 +124,13 @@
       const guide = s.token.ok ? '✅ Token 已就绪，可直接调用 API。' : '⚠️ 未登录，请先点“Cursor 登录”。';
       out.textContent = `${guide}\n\nToken: ${s.token.msg}\nHealth: [${s.health.status}] ${s.health.body}`;
     }
+
     async function refreshStatus(){
       const s = await window.gateway.status();
-      const el = document.getElementById('auth');
       if (s?.token?.ok) {
-        el.textContent = '✅ 已登录 Cursor';
-        el.style.color = '#16a34a';
+        setAuth(true, '已登录 Cursor');
       } else {
-        el.textContent = '⚠️ 未登录 Cursor（请点击“Cursor 登录”）';
-        el.style.color = '#f59e0b';
+        setAuth(false, '未登录 Cursor（请点击“Cursor 登录”）');
       }
       const elapsed = Date.now() - bootAt;
       if ((s?.health?.ok || s?.health?.status===200) && elapsed >= BOOT_MIN_MS) {
