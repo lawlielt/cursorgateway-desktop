@@ -262,20 +262,23 @@ app.whenReady().then(() => {
   startServer();
 
   setTimeout(() => {
+    closeSplash();
     const t = tokenStatus();
     const guideDismissed = getGuideDismissed();
     if (!firstRunGuideShown && !guideDismissed && !t.ok) {
       firstRunGuideShown = true;
+      openPanel();
       dialog.showMessageBox({
         type: 'info',
         title: '首次使用引导',
         message: '检测到尚未登录 Cursor',
-        detail: '请按顺序操作：\n1) 点击托盘图标打开控制面板\n2) 点击【Cursor 登录】\n3) 点击【状态检测】确认 token 与 /health 正常'
+        detail: '请按顺序操作：
+1) 点击【Cursor 登录】
+2) 点击【状态检测】确认 token 与 /health 正常'
       });
-      openPanel();
       setGuideDismissed(true);
     }
-  }, 1200);
+  }, 1400);
 });
 
 app.on('before-quit', () => {
