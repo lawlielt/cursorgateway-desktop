@@ -13,8 +13,8 @@ const appRoot = path.resolve(__dirname, '..');
 const serverEntry = path.join(appRoot, 'src', 'app.js');
 const loginEntry = path.join(appRoot, 'src', 'tool', 'cursorLogin.js');
 const packagedLoginEntry = path.join(process.resourcesPath || '', 'app.asar', 'src', 'tool', 'cursorLogin.js');
-const port = process.env.PORT || '3010';
-const baseURL = `http://127.0.0.1:${port}`;
+let currentPort = process.env.PORT || '3010';
+function getBaseURL(){ return `http://127.0.0.1:${currentPort}`; }
 const tokenFile = path.join(appRoot, '.cursor-token');
 const runtimeCwd = process.resourcesPath || process.cwd();
 const runtimeTokenFile = path.join(app.getPath('userData'), '.cursor-token');
@@ -70,6 +70,36 @@ function setGuideDismissed(v) {
   }
 }
 
+
+function getSavedPort() {
+  try {
+    const f = prefFilePath();
+    if (!fs.existsSync(f)) return null;
+    const j = JSON.parse(fs.readFileSync(f, 'utf8'));
+    return j.port ? String(j.port) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setSavedPort(v) {
+  try {
+    const f = prefFilePath();
+    const dir = path.dirname(f);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    let j = {};
+    if (fs.existsSync(f)) {
+      try { j = JSON.parse(fs.readFileSync(f, 'utf8')); } catch { j = {}; }
+    }
+    j.port = String(v);
+    fs.writeFileSync(f, JSON.stringify(j, null, 2), 'utf8');
+    return true;
+  } catch (e) {
+    console.error('[prefs] write port failed:', e);
+    return false;
+  }
+}
+
 function tokenStatus() {
   try {
     const f = fs.existsSync(runtimeTokenFile) ? runtimeTokenFile : (fs.existsSync(legacyTokenFile) ? legacyTokenFile : tokenFile);
@@ -88,7 +118,7 @@ function spawnNodeScript(entry) {
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: '1',
-      PORT: String(port),
+      PORT: String(currentPort),
       CURSOR_GATEWAY_SESSIONS_DIR: path.join(app.getPath('userData'), 'sessions'),
       CURSOR_GATEWAY_LOG_FILE: path.join(app.getPath('userData'), 'server.log'),
       CURSOR_GATEWAY_TOKEN_FILE: runtimeTokenFile
@@ -101,7 +131,7 @@ function spawnNodeScript(entry) {
 
 function startServerEmbedded() {
   if (serverProc) return;
-  process.env.PORT = String(port);
+  process.env.PORT = String(currentPort);
   process.env.CURSOR_GATEWAY_SESSIONS_DIR = path.join(app.getPath('userData'), 'sessions');
   process.env.CURSOR_GATEWAY_LOG_FILE = path.join(app.getPath('userData'), 'server.log');
   process.env.CURSOR_GATEWAY_TOKEN_FILE = runtimeTokenFile;
@@ -187,7 +217,7 @@ function runLoginFlow() {
 }
 
 async function check(pathname) {
-  const url = `${baseURL}${pathname}`;
+  const url = `${getBaseURL()}${pathname}`;
   try {
     const tokenPath = fs.existsSync(runtimeTokenFile) ? runtimeTokenFile : (fs.existsSync(legacyTokenFile) ? legacyTokenFile : null);
     const token = tokenPath ? fs.readFileSync(tokenPath, 'utf8').trim() : '';
@@ -231,6 +261,7 @@ function refreshMenu() {
     { label: '停止服务', enabled: running, click: stopServer },
     { type: 'separator' },
     { label: tokenStatus().ok ? '✅ Cursor 已登录' : 'Cursor 登录', click: runLoginFlow },
+    { label: `当前端口: ${currentPort}`, enabled: false },
     { label: '检查 /health', click: async () => {
       const r = await check('/health');
       dialog.showMessageBox({ message: `${r.url}\n\n${r.body.slice(0,3500)}` });
@@ -246,6 +277,8 @@ function refreshMenu() {
 }
 
 app.whenReady().then(() => {
+  const saved = getSavedPort();
+  if (saved) currentPort = saved;
   ipcMain.handle('gateway:check', (_, p) => check(p || '/health'));
   ipcMain.handle('gateway:start', () => { startServer(); return { ok: true }; });
   ipcMain.handle('gateway:stop', () => { stopServer(); return { ok: true }; });
@@ -253,7 +286,19 @@ app.whenReady().then(() => {
   ipcMain.handle('gateway:status', async () => {
     const t = tokenStatus();
     const h = await check('/health');
-    return { token: t, health: h };
+    return { token: t, health: h, port: currentPort, baseURL: getBaseURL() };
+  });
+  ipcMain.handle('gateway:get-config', async () => ({ port: currentPort, baseURL: getBaseURL() }));
+  ipcMain.handle('gateway:set-port', async (_e, portVal) => {
+    const p = String(portVal || '').trim();
+    if (!/^\d{2,5}$/.test(p)) return { ok: false, error: '端口格式不正确' };
+    const n = Number(p);
+    if (n < 1 || n > 65535) return { ok: false, error: '端口范围应在 1-65535' };
+    currentPort = p;
+    setSavedPort(p);
+    process.env.PORT = p;
+    refreshMenu();
+    return { ok: true, port: currentPort, baseURL: getBaseURL(), needRestart: !!serverProc };
   });
 
   tray = new Tray(nativeImage.createEmpty());

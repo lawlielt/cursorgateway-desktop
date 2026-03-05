@@ -75,6 +75,10 @@
   <div class="card">
     <h2>Cursor Gateway Desktop</h2>
     <p id="base" class="muted"></p>
+    <div class="row" style="margin-top:6px">
+      <input id="portInput" placeholder="端口，如 3010" style="width:140px;background:#0b1530;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:6px 8px"/>
+      <button onclick="savePort()">保存端口</button>
+    </div>
     <p id="auth" class="status"><span class="dot"></span>登录状态检测中...</p>
 
     <div id="loadingWrap" class="loadingWrap">
@@ -101,7 +105,12 @@
   </div>
 
   <script>
-    document.getElementById('base').textContent = `Base URL: ${window.gateway.baseURL}`;
+    async function initConfig(){
+      const c = await window.gateway.getConfig();
+      document.getElementById('base').textContent = `Base URL: ${c.baseURL}`;
+      document.getElementById('portInput').value = c.port;
+    }
+    initConfig();
     const BOOT_MIN_MS = 2500;
     const bootAt = Date.now();
     setTimeout(refreshStatus, 600);
@@ -114,6 +123,14 @@
     }
 
     async function start(){ await window.gateway.start(); document.getElementById('out').textContent='已请求启动'; }
+    async function savePort(){
+      const p = document.getElementById('portInput').value.trim();
+      const res = await window.gateway.setPort(p);
+      const out = document.getElementById('out');
+      if(!res.ok){ out.textContent = `设置失败: ${res.error}`; return; }
+      document.getElementById('base').textContent = `Base URL: ${res.baseURL}`;
+      out.textContent = `端口已保存为 ${res.port}。${res.needRestart ? '请重启应用或点击停止/启动服务使其生效' : ''}`;
+    }
     async function stop(){ await window.gateway.stop(); document.getElementById('out').textContent='已请求停止'; }
     async function login(){ await window.gateway.login(); document.getElementById('out').textContent='已启动登录流程，请按弹窗结果操作'; }
 
