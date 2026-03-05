@@ -2,13 +2,11 @@ const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, dialog } = require
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
-const Store = require('electron-store');
 
 let tray;
 let win;
 let serverProc = null;
 let loginProc = null;
-const store = new Store({ name: 'cursor-gateway-desktop' });
 let firstRunGuideShown = false;
 
 const appRoot = path.resolve(__dirname, '..');
@@ -17,6 +15,37 @@ const loginEntry = path.join(appRoot, 'src', 'tool', 'cursorLogin.js');
 const port = process.env.PORT || '3010';
 const baseURL = `http://127.0.0.1:${port}`;
 const tokenFile = path.join(appRoot, '.cursor-token');
+
+function prefFilePath() {
+  return path.join(app.getPath('userData'), 'prefs.json');
+}
+
+function getGuideDismissed() {
+  try {
+    const f = prefFilePath();
+    if (!fs.existsSync(f)) return false;
+    const j = JSON.parse(fs.readFileSync(f, 'utf8'));
+    return Boolean(j.guideDismissed);
+  } catch {
+    return false;
+  }
+}
+
+function setGuideDismissed(v) {
+  try {
+    const f = prefFilePath();
+    const dir = path.dirname(f);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    let j = {};
+    if (fs.existsSync(f)) {
+      try { j = JSON.parse(fs.readFileSync(f, 'utf8')); } catch { j = {}; }
+    }
+    j.guideDismissed = Boolean(v);
+    fs.writeFileSync(f, JSON.stringify(j, null, 2), 'utf8');
+  } catch (e) {
+    console.error('[prefs] write failed:', e);
+  }
+}
 
 function tokenStatus() {
   try {
@@ -132,7 +161,7 @@ function refreshMenu() {
 }
 
 app.whenReady().then(() => {
-  ipcMain.handle('gateway:check', (_, path) => check(path || '/health'));
+  ipcMain.handle('gateway:check', (_, p) => check(p || '/health'));
   ipcMain.handle('gateway:start', () => { startServer(); return { ok: true }; });
   ipcMain.handle('gateway:stop', () => { stopServer(); return { ok: true }; });
   ipcMain.handle('gateway:login', () => { runLoginFlow(); return { ok: true }; });
@@ -151,17 +180,17 @@ app.whenReady().then(() => {
 
   setTimeout(() => {
     const t = tokenStatus();
-    const guideDismissed = store.get('guideDismissed', false);
+    const guideDismissed = getGuideDismissed();
     if (!firstRunGuideShown && !guideDismissed && !t.ok) {
       firstRunGuideShown = true;
       dialog.showMessageBox({
-        type: "info",
-        title: "首次使用引导",
-        message: "检测到尚未登录 Cursor",
-        detail: "请按顺序操作：\n1) 点击托盘图标打开控制面板\n2) 点击【Cursor 登录】\n3) 点击【状态检测】确认 token 与 /health 正常"
+        type: 'info',
+        title: '首次使用引导',
+        message: '检测到尚未登录 Cursor',
+        detail: '请按顺序操作：\n1) 点击托盘图标打开控制面板\n2) 点击【Cursor 登录】\n3) 点击【状态检测】确认 token 与 /health 正常'
       });
       openPanel();
-      store.set('guideDismissed', true);
+      setGuideDismissed(true);
     }
   }, 1200);
 });

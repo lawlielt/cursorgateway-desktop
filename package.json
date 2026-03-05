@@ -12,8 +12,7 @@
     "morgan": "^1.10.0",
     "protobufjs": "^7.4.0",
     "undici": "^7.4.0",
-    "uuid": "11.0.5",
-    "electron-store": "^10.0.1"
+    "uuid": "11.0.5"
   },
   "scripts": {
     "proto": "npx pbjs -t static-module -w commonjs -o src/proto/message.js src/proto/message.proto",
