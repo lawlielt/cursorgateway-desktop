@@ -16,18 +16,26 @@
     <button onclick="start()">启动服务</button>
     <button onclick="stop()">停止服务</button>
     <button onclick="login()">Cursor 登录</button>
+    <button onclick="status()">状态检测</button>
   </div>
   <div>
     <button onclick="check('/health')">检查 /health</button>
     <button onclick="check('/v1/models')">检查 /v1/models</button>
   </div>
-  <pre id="out">准备就绪</pre>
+  <pre id="out">准备就绪（首次使用建议先点“状态检测”）</pre>
 
   <script>
     document.getElementById('base').textContent = `Base URL: ${window.gateway.baseURL}/v1`;
     async function start(){ await window.gateway.start(); document.getElementById('out').textContent='已请求启动'; }
     async function stop(){ await window.gateway.stop(); document.getElementById('out').textContent='已请求停止'; }
     async function login(){ await window.gateway.login(); document.getElementById('out').textContent='已启动登录流程，请按弹窗结果操作'; }
+    async function status(){
+      const out = document.getElementById('out');
+      out.textContent = '检测中...';
+      const s = await window.gateway.status();
+      const guide = s.token.ok ? '✅ Token 已就绪，可直接调用 API。' : '⚠️ 未登录，请先点“Cursor 登录”。';
+      out.textContent = `${guide}\n\nToken: ${s.token.msg}\nHealth: [${s.health.status}] ${s.health.body}`;
+    }
     async function check(path){
       const out = document.getElementById('out');
       out.textContent = '请求中...';

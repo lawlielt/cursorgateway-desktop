@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, dialog } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 
 let tray;
 let win;
@@ -12,6 +13,18 @@ const serverEntry = path.join(appRoot, 'src', 'app.js');
 const loginEntry = path.join(appRoot, 'src', 'tool', 'cursorLogin.js');
 const port = process.env.PORT || '3010';
 const baseURL = `http://127.0.0.1:${port}`;
+const tokenFile = path.join(appRoot, '.cursor-token');
+
+function tokenStatus() {
+  try {
+    if (!fs.existsSync(tokenFile)) return { ok: false, msg: '未检测到 .cursor-token，请先点击“Cursor 登录”。' };
+    const t = fs.readFileSync(tokenFile, 'utf8').trim();
+    if (!t) return { ok: false, msg: '.cursor-token 为空，请重新登录。' };
+    return { ok: true, msg: '已检测到有效 token。' };
+  } catch (e) {
+    return { ok: false, msg: `读取 token 失败: ${String(e)}` };
+  }
+}
 
 function spawnNodeScript(entry) {
   return spawn(process.execPath, [entry], {
@@ -120,6 +133,11 @@ app.whenReady().then(() => {
   ipcMain.handle('gateway:start', () => { startServer(); return { ok: true }; });
   ipcMain.handle('gateway:stop', () => { stopServer(); return { ok: true }; });
   ipcMain.handle('gateway:login', () => { runLoginFlow(); return { ok: true }; });
+  ipcMain.handle('gateway:status', async () => {
+    const t = tokenStatus();
+    const h = await check('/health');
+    return { token: t, health: h };
+  });
 
   tray = new Tray(nativeImage.createEmpty());
   tray.setTitle('CG');

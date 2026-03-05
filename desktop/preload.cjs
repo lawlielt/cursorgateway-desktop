@@ -5,5 +5,6 @@ contextBridge.exposeInMainWorld('gateway', {
   start: () => ipcRenderer.invoke('gateway:start'),
   stop: () => ipcRenderer.invoke('gateway:stop'),
   login: () => ipcRenderer.invoke('gateway:login'),
+  status: () => ipcRenderer.invoke('gateway:status'),
   baseURL: `http://127.0.0.1:${process.env.PORT || '3010'}`
 });
