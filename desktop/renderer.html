@@ -151,6 +151,9 @@
 
     async function refreshStatus(){
       const s = await window.gateway.status();
+      if (s?.baseURL) {
+        document.getElementById('base').textContent = `Base URL: ${s.baseURL}`;
+      }
       if (s?.token?.ok) {
         setAuth(true, '已登录 Cursor');
       } else {
