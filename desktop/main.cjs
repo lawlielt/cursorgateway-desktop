@@ -274,9 +274,7 @@ app.whenReady().then(() => {
         type: 'info',
         title: '首次使用引导',
         message: '检测到尚未登录 Cursor',
-        detail: '请按顺序操作：
-1) 点击【Cursor 登录】
-2) 点击【状态检测】确认 token 与 /health 正常'
+        detail: '请按顺序操作：\n1) 点击【Cursor 登录】\n2) 点击【状态检测】确认 token 与 /health 正常'
       });
       setGuideDismissed(true);
     }
