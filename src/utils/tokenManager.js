@@ -2,7 +2,11 @@ const fs = require('fs');
 const path = require('path');
 
 // Token 存储文件路径（项目根目录下的 .cursor-token）
+const os = require('os');
+
 const TOKEN_FILE = process.env.CURSOR_GATEWAY_TOKEN_FILE || path.join(process.cwd(), '.cursor-token');
+const LEGACY_TOKEN_FILE = path.join(os.homedir(), 'Library', 'Application Support', 'cursor-gateway', '.cursor-token');
+const DESKTOP_TOKEN_FILE = path.join(os.homedir(), 'Library', 'Application Support', 'Cursor Gateway Desktop', '.cursor-token');
 
 /**
  * 保存 Token 到本地文件
@@ -24,10 +28,11 @@ function saveToken(token) {
  */
 function loadToken() {
   try {
-    if (fs.existsSync(TOKEN_FILE)) {
-      const token = fs.readFileSync(TOKEN_FILE, 'utf-8').trim();
-      if (token) {
-        return token;
+    const candidates = [TOKEN_FILE, LEGACY_TOKEN_FILE, DESKTOP_TOKEN_FILE];
+    for (const f of candidates) {
+      if (fs.existsSync(f)) {
+        const token = fs.readFileSync(f, 'utf-8').trim();
+        if (token) return token;
       }
     }
   } catch (err) {
@@ -159,4 +164,6 @@ module.exports = {
   getTokenFromRequest,
   parseToken,
   TOKEN_FILE,
+  LEGACY_TOKEN_FILE,
+  DESKTOP_TOKEN_FILE,
 };
