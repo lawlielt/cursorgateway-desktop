@@ -294,11 +294,31 @@ app.whenReady().then(() => {
     if (!/^\d{2,5}$/.test(p)) return { ok: false, error: '端口格式不正确' };
     const n = Number(p);
     if (n < 1 || n > 65535) return { ok: false, error: '端口范围应在 1-65535' };
+
+    const wasRunning = !!serverProc;
+    const wasEmbedded = !!(serverProc && serverProc.embedded);
+
     currentPort = p;
     setSavedPort(p);
     process.env.PORT = p;
     refreshMenu();
-    return { ok: true, port: currentPort, baseURL: getBaseURL(), needRestart: !!serverProc };
+
+    if (wasRunning && !wasEmbedded) {
+      stopServer();
+      setTimeout(() => startServer(), 300);
+      return { ok: true, port: currentPort, baseURL: getBaseURL(), restarted: true };
+    }
+
+    if (wasRunning && wasEmbedded) {
+      // packaged embedded mode: relaunch app to apply new port reliably
+      setTimeout(() => {
+        app.relaunch();
+        app.exit(0);
+      }, 200);
+      return { ok: true, port: currentPort, baseURL: getBaseURL(), relaunched: true };
+    }
+
+    return { ok: true, port: currentPort, baseURL: getBaseURL() };
   });
 
   tray = new Tray(nativeImage.createEmpty());

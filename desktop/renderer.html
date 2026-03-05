@@ -129,7 +129,7 @@
       const out = document.getElementById('out');
       if(!res.ok){ out.textContent = `设置失败: ${res.error}`; return; }
       document.getElementById('base').textContent = `Base URL: ${res.baseURL}`;
-      out.textContent = `端口已保存为 ${res.port}。${res.needRestart ? '请重启应用或点击停止/启动服务使其生效' : ''}`;
+      out.textContent = `端口已保存为 ${res.port}。${res.relaunched ? '应用即将自动重启以应用新端口。' : (res.restarted ? '服务已自动重启并应用新端口。' : '配置已生效。')}`;
     }
     async function stop(){ await window.gateway.stop(); document.getElementById('out').textContent='已请求停止'; }
     async function login(){ await window.gateway.login(); document.getElementById('out').textContent='已启动登录流程，请按弹窗结果操作'; }
