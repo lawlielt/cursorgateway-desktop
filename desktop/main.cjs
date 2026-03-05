@@ -91,8 +91,7 @@ function spawnNodeScript(entry) {
       PORT: String(port),
       CURSOR_GATEWAY_SESSIONS_DIR: path.join(app.getPath('userData'), 'sessions'),
       CURSOR_GATEWAY_LOG_FILE: path.join(app.getPath('userData'), 'server.log'),
-      CURSOR_GATEWAY_TOKEN_FILE: runtimeTokenFile,
-      CURSOR_GATEWAY_TOKEN_FILE: path.join(app.getPath('userData'), '.cursor-token')
+      CURSOR_GATEWAY_TOKEN_FILE: runtimeTokenFile
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
@@ -264,6 +263,7 @@ app.whenReady().then(() => {
   refreshMenu();
   startServer();
   openPanel();
+  app.focus();
 
   setTimeout(() => {
     openPanel();

@@ -33,7 +33,9 @@
   <pre id="out">准备就绪（首次使用建议先点“状态检测”）</pre>
 
   <script>
-    document.getElementById('base').textContent = `Base URL: ${window.gateway.baseURL}/v1`;
+    document.getElementById('base').textContent = `Base URL: ${window.gateway.baseURL}`;
+    const BOOT_MIN_MS = 2500;
+    const bootAt = Date.now();
     setTimeout(refreshStatus, 600); setInterval(refreshStatus, 5000);
     async function start(){ await window.gateway.start(); document.getElementById('out').textContent='已请求启动'; }
     async function stop(){ await window.gateway.stop(); document.getElementById('out').textContent='已请求停止'; }
@@ -55,7 +57,8 @@
         el.textContent = '⚠️ 未登录 Cursor（请点击“Cursor 登录”）';
         el.style.color = '#f59e0b';
       }
-      if (s?.health?.ok || s?.health?.status===200) {
+      const elapsed = Date.now() - bootAt;
+      if ((s?.health?.ok || s?.health?.status===200) && elapsed >= BOOT_MIN_MS) {
         const w = document.getElementById('loadingWrap');
         if (w) w.style.display='none';
       }
