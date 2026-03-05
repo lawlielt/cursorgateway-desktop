@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Cursor Gateway Desktop</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 16px; }
+    button { margin-right: 8px; margin-bottom: 8px; padding: 8px 12px; }
+    pre { background: #111; color: #eee; padding: 10px; border-radius: 8px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h2>Cursor Gateway Desktop</h2>
+  <p id="base"></p>
+  <div>
+    <button onclick="start()">启动服务</button>
+    <button onclick="stop()">停止服务</button>
+    <button onclick="login()">Cursor 登录</button>
+  </div>
+  <div>
+    <button onclick="check('/health')">检查 /health</button>
+    <button onclick="check('/v1/models')">检查 /v1/models</button>
+  </div>
+  <pre id="out">准备就绪</pre>
+
+  <script>
+    document.getElementById('base').textContent = `Base URL: ${window.gateway.baseURL}/v1`;
+    async function start(){ await window.gateway.start(); document.getElementById('out').textContent='已请求启动'; }
+    async function stop(){ await window.gateway.stop(); document.getElementById('out').textContent='已请求停止'; }
+    async function login(){ await window.gateway.login(); document.getElementById('out').textContent='已启动登录流程，请按弹窗结果操作'; }
+    async function check(path){
+      const out = document.getElementById('out');
+      out.textContent = '请求中...';
+      const r = await window.gateway.check(path);
+      out.textContent = `[${r.status}] ${r.url}\n\n${r.body}`;
+    }
+  </script>
+</body>
+</html>

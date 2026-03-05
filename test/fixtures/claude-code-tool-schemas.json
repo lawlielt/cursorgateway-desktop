@@ -1,0 +1,223 @@
+{
+  "Agent": {
+    "required": [
+      "description",
+      "prompt",
+      "subagent_type"
+    ],
+    "properties": [
+      "description",
+      "isolation",
+      "max_turns",
+      "model",
+      "prompt",
+      "resume",
+      "run_in_background",
+      "subagent_type"
+    ]
+  },
+  "TaskOutput": {
+    "required": [
+      "block",
+      "task_id",
+      "timeout"
+    ],
+    "properties": [
+      "block",
+      "task_id",
+      "timeout"
+    ]
+  },
+  "Bash": {
+    "required": [
+      "command"
+    ],
+    "properties": [
+      "command",
+      "dangerouslyDisableSandbox",
+      "description",
+      "run_in_background",
+      "timeout"
+    ]
+  },
+  "Glob": {
+    "required": [
+      "pattern"
+    ],
+    "properties": [
+      "path",
+      "pattern"
+    ]
+  },
+  "Grep": {
+    "required": [
+      "pattern"
+    ],
+    "properties": [
+      "-A",
+      "-B",
+      "-C",
+      "-i",
+      "-n",
+      "context",
+      "glob",
+      "head_limit",
+      "multiline",
+      "offset",
+      "output_mode",
+      "path",
+      "pattern",
+      "type"
+    ]
+  },
+  "ExitPlanMode": {
+    "required": [],
+    "properties": [
+      "allowedPrompts"
+    ]
+  },
+  "Read": {
+    "required": [
+      "file_path"
+    ],
+    "properties": [
+      "file_path",
+      "limit",
+      "offset",
+      "pages"
+    ]
+  },
+  "Edit": {
+    "required": [
+      "file_path",
+      "new_string",
+      "old_string"
+    ],
+    "properties": [
+      "file_path",
+      "new_string",
+      "old_string",
+      "replace_all"
+    ]
+  },
+  "Write": {
+    "required": [
+      "content",
+      "file_path"
+    ],
+    "properties": [
+      "content",
+      "file_path"
+    ]
+  },
+  "NotebookEdit": {
+    "required": [
+      "new_source",
+      "notebook_path"
+    ],
+    "properties": [
+      "cell_id",
+      "cell_type",
+      "edit_mode",
+      "new_source",
+      "notebook_path"
+    ]
+  },
+  "WebFetch": {
+    "required": [
+      "prompt",
+      "url"
+    ],
+    "properties": [
+      "prompt",
+      "url"
+    ]
+  },
+  "WebSearch": {
+    "required": [
+      "query"
+    ],
+    "properties": [
+      "allowed_domains",
+      "blocked_domains",
+      "query"
+    ]
+  },
+  "TaskStop": {
+    "required": [],
+    "properties": [
+      "shell_id",
+      "task_id"
+    ]
+  },
+  "AskUserQuestion": {
+    "required": [
+      "questions"
+    ],
+    "properties": [
+      "annotations",
+      "answers",
+      "metadata",
+      "questions"
+    ]
+  },
+  "Skill": {
+    "required": [
+      "skill"
+    ],
+    "properties": [
+      "args",
+      "skill"
+    ]
+  },
+  "EnterPlanMode": {
+    "required": [],
+    "properties": []
+  },
+  "TaskCreate": {
+    "required": [
+      "description",
+      "subject"
+    ],
+    "properties": [
+      "activeForm",
+      "description",
+      "metadata",
+      "subject"
+    ]
+  },
+  "TaskGet": {
+    "required": [
+      "taskId"
+    ],
+    "properties": [
+      "taskId"
+    ]
+  },
+  "TaskUpdate": {
+    "required": [
+      "taskId"
+    ],
+    "properties": [
+      "activeForm",
+      "addBlockedBy",
+      "addBlocks",
+      "description",
+      "metadata",
+      "owner",
+      "status",
+      "subject",
+      "taskId"
+    ]
+  },
+  "TaskList": {
+    "required": [],
+    "properties": []
+  },
+  "EnterWorktree": {
+    "required": [],
+    "properties": [
+      "name"
+    ]
+  }
+}

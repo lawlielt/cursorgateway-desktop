@@ -1,0 +1,54 @@
+{
+  "name": "cursor-gateway",
+  "version": "3.0.0",
+  "description": "Cursor AI models as standard OpenAI/Anthropic API — multi-client gateway with agent mode",
+  "author": "",
+  "private": false,
+  "main": "desktop/main.cjs",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "express": "4.21.2",
+    "morgan": "^1.10.0",
+    "protobufjs": "^7.4.0",
+    "undici": "^7.4.0",
+    "uuid": "11.0.5"
+  },
+  "scripts": {
+    "proto": "npx pbjs -t static-module -w commonjs -o src/proto/message.js src/proto/message.proto",
+    "login": "node src/tool/cursorLogin.js",
+    "start": "node src/app.js",
+    "test:tools": "node test/unit/kv-tool-adapter.test.js && node test/unit/tool-flow-automation.test.js && node test/unit/text-tool-fallback.test.js",
+    "test:mcp": "node test/integration/mcp-fix.test.js",
+    "test:smoke": "node scripts/run-smoke-tests.js",
+    "test:full": "npm run test:tools && npm run test:mcp && npm run test:smoke",
+    "auto:heal": "node scripts/auto-heal-loop.js",
+    "start:server": "node src/app.js",
+    "dev:app": "electron .",
+    "dist:app": "electron-builder --mac dmg --publish never",
+    "package:app": "npm install && npm run dist:app"
+  },
+  "devDependencies": {
+    "protobufjs-cli": "^1.1.3",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "ai.lawlielt.cursorgateway.desktop",
+    "productName": "Cursor Gateway Desktop",
+    "files": [
+      "desktop/**",
+      "src/**",
+      "package.json",
+      "node_modules/**",
+      ".cursor-token"
+    ],
+    "asar": true,
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.developer-tools"
+    }
+  }
+}

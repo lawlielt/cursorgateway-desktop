@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run proto:*)",
+      "Bash(node -c:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(node test-mcp-fix.js:*)",
+      "WebFetch(domain:finance.sina.com.cn)",
+      "WebFetch(domain:www.eastmoney.com)",
+      "WebFetch(domain:mp.weixin.qq.com)",
+      "WebSearch",
+      "Bash(wc:*)",
+      "Bash(find:*)",
+      "Bash(printf %s\\\\n:*)",
+      "Bash(curl:*)"
+    ]
+  }
+}

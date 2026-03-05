@@ -1,0 +1,642 @@
+syntax = "proto3";
+
+// Based on TASK-26-tool-schemas.md, TASK-110-tool-enum-mapping.md,
+// and agent.v1 proto extracted from Cursor.app JS source.
+
+// ============================================================================
+// agent.v1 — Agent mode exec protocol (RunSSE + BidiAppend)
+// Extracted from: /Applications/Cursor.app/.../workbench.desktop.main.js
+// ============================================================================
+
+// Top-level server message on the SSE stream
+message AgentServerMessage {
+  oneof message {
+    InteractionUpdate interaction_update = 1;       // text, heartbeat, turn_ended
+    ExecServerMessage exec_server_message = 2;      // tool execution request
+    bytes conversation_checkpoint_update = 3;        // checkpoint
+    // KV messages are at field 4 in the outer wrapper, handled separately
+    ExecServerControlMessage exec_server_control_message = 5;
+  }
+}
+
+message InteractionUpdate {}  // parsed separately in code
+message ExecServerControlMessage {}  // abort etc.
+
+// Tool execution request: server → client
+message ExecServerMessage {
+  uint32 id = 1;
+  string exec_id = 15;
+  optional SpanContext span_context = 19;
+  oneof message {
+    ShellArgs shell_args = 2;
+    WriteArgs write_args = 3;
+    DeleteArgs delete_args = 4;
+    GrepArgs grep_args = 5;
+    // field 6 unused
+    ReadArgs read_args = 7;
+    LsArgs ls_args = 8;
+    DiagnosticsArgs diagnostics_args = 9;
+    RequestContextArgs request_context_args = 10;
+    McpArgs mcp_args = 11;
+    // field 12-13 unused
+    ShellArgs shell_stream_args = 14;
+    // field 15 = exec_id (scalar, not oneof)
+    BackgroundShellSpawnArgs background_shell_spawn_args = 16;
+    ListMcpResourcesExecArgs list_mcp_resources_exec_args = 17;
+    ReadMcpResourceExecArgs read_mcp_resource_exec_args = 18;
+    // field 19 = span_context (not oneof)
+    FetchArgs fetch_args = 20;
+    RecordScreenArgs record_screen_args = 21;
+    ComputerUseArgs computer_use_args = 22;
+    WriteShellStdinArgs write_shell_stdin_args = 23;
+    // fields 24-26 unused
+    ExecuteHookArgs execute_hook_args = 27;
+    SubagentArgs subagent_args = 28;
+  }
+}
+
+// Tool execution result: client → server
+message ExecClientMessage {
+  uint32 id = 1;
+  string exec_id = 15;
+  oneof message {
+    ShellResult shell_result = 2;
+    WriteResult write_result = 3;
+    DeleteResult delete_result = 4;
+    GrepResult grep_result = 5;
+    ReadResult read_result = 7;
+    LsResult ls_result = 8;
+    DiagnosticsResult diagnostics_result = 9;
+    RequestContextResult request_context_result = 10;
+    McpResult mcp_result = 11;
+    ShellStream shell_stream = 14;
+    BackgroundShellSpawnResult background_shell_spawn_result = 16;
+    ListMcpResourcesExecResult list_mcp_resources_exec_result = 17;
+    ReadMcpResourceExecResult read_mcp_resource_exec_result = 18;
+    FetchResult fetch_result = 20;
+    RecordScreenResult record_screen_result = 21;
+    ComputerUseResult computer_use_result = 22;
+    WriteShellStdinResult write_shell_stdin_result = 23;
+    ExecuteHookResult execute_hook_result = 27;
+    SubagentResult subagent_result = 28;
+  }
+}
+
+message SpanContext {} // opaque tracing context
+
+// --- Tool args ---
+message ShellArgs {
+  string command = 1;
+  string working_directory = 2;
+  int32 timeout = 3;
+  string tool_call_id = 4;
+  repeated string simple_commands = 5;
+  bool has_input_redirect = 6;
+  bool has_output_redirect = 7;
+  // 8: parsing_result, 9: sandbox_policy, 10: file_output_threshold_bytes
+  // 11: is_background
+}
+
+message WriteArgs {
+  string path = 1;
+  string file_text = 2;
+  string tool_call_id = 3;
+}
+
+message DeleteArgs {
+  string path = 1;
+  string tool_call_id = 2;
+}
+
+message GrepArgs {
+  string pattern = 1;
+  optional string path = 2;
+  optional string glob = 3;
+  optional string output_mode = 4;
+  optional int32 context_before = 5;
+  optional int32 context_after = 6;
+  optional int32 context = 7;
+  optional bool case_insensitive = 8;
+  optional string type = 9;
+  optional int32 head_limit = 10;
+  optional bool multiline = 11;
+  // 12: sort
+}
+
+message ReadArgs {
+  string path = 1;
+  // 2+: line range, etc.
+}
+
+message LsArgs {
+  string path = 1;
+  repeated string ignore = 2;
+  string tool_call_id = 3;
+  // 4: sandbox_policy, 5: timeout_ms
+}
+
+message DiagnosticsArgs {
+  string path = 1;
+  string tool_call_id = 2;
+}
+
+message RequestContextArgs {} // no fields
+
+message McpArgs {
+  string name = 1;
+  // 2: unused
+  string tool_call_id = 3;
+  string provider_identifier = 4;
+  string tool_name = 5;
+  string raw_args = 6;
+}
+
+message BackgroundShellSpawnArgs {
+  string command = 1;
+  string working_directory = 2;
+  string tool_call_id = 3;
+  // 4: parsing_result, 5: sandbox_policy, 6: enable_write_shell_stdin_tool
+}
+
+message ListMcpResourcesExecArgs {}  // TODO: extract fields
+message ReadMcpResourceExecArgs {}   // TODO: extract fields
+
+message FetchArgs {} // TODO: extract fields
+
+message RecordScreenArgs {
+  // 1: mode (enum), 2: tool_call_id, 3: save_as_filename
+}
+
+message ComputerUseArgs {
+  string tool_call_id = 1;
+  // 2: repeated actions
+}
+
+message WriteShellStdinArgs {
+  uint32 shell_id = 1;
+  string chars = 2;
+}
+
+message ExecuteHookArgs {} // TODO: extract fields
+message SubagentArgs {}    // TODO: extract fields
+
+// --- Tool results ---
+message ShellResult {
+  oneof result {
+    ShellSuccess success = 1;
+    ShellFailure failure = 2;
+    ShellTimeout timeout = 3;
+    ShellRejected rejected = 4;
+    ShellSpawnError spawn_error = 5;
+    ShellPermissionDenied permission_denied = 7;
+  }
+}
+
+message ShellSuccess {
+  string command = 1;
+  string working_directory = 2;
+  int32 exit_code = 3;
+  string signal = 4;
+  string stdout = 5;
+  string stderr = 6;
+  int32 execution_time = 7;
+}
+
+message ShellFailure {
+  string command = 1;
+  string working_directory = 2;
+  int32 exit_code = 3;
+  string signal = 4;
+  string stdout = 5;
+  string stderr = 6;
+  int32 execution_time = 7;
+}
+
+message ShellTimeout {
+  string command = 1;
+  string working_directory = 2;
+  int32 timeout_ms = 3;
+}
+
+message ShellRejected {
+  string command = 1;
+  string working_directory = 2;
+  string reason = 3;
+  bool is_readonly = 4;
+}
+
+message ShellSpawnError {
+  string command = 1;
+  string working_directory = 2;
+  string error = 3;
+}
+
+message ShellPermissionDenied {
+  string command = 1;
+  string working_directory = 2;
+  string error = 3;
+  bool is_readonly = 4;
+}
+
+message ShellStream {
+  oneof event {
+    ShellStreamStdout stdout = 1;
+    ShellStreamStderr stderr = 2;
+    ShellStreamExit exit = 3;
+    ShellStreamStart start = 4;
+    ShellRejected rejected = 5;
+    ShellPermissionDenied permission_denied = 6;
+    ShellStreamBackgrounded backgrounded = 7;
+  }
+}
+
+message ShellStreamStdout { string data = 1; }
+message ShellStreamStderr { string data = 1; }
+message ShellStreamExit { uint32 code = 1; string cwd = 2; }
+message ShellStreamStart {}
+message ShellStreamBackgrounded { uint32 shell_id = 1; string command = 2; string working_directory = 3; }
+
+message WriteResult {
+  oneof result {
+    WriteSuccess success = 1;
+    WriteError error = 2;
+  }
+}
+
+message WriteSuccess {
+  string path = 1;
+  int32 lines_created = 2;
+  int32 file_size = 3;
+}
+
+message WriteError {
+  string path = 1;
+  string error = 2;
+}
+
+message DeleteResult {
+  oneof result {
+    DeleteSuccess success = 1;
+    DeleteFileNotFound file_not_found = 2;
+    DeleteNotFile not_file = 3;
+    DeletePermissionDenied permission_denied = 4;
+    DeleteFileBusy file_busy = 5;
+    DeleteRejected rejected = 6;
+    DeleteError error = 7;
+  }
+}
+
+message DeleteSuccess {
+  string path = 1;
+  string deleted_file = 2;
+  int64 file_size = 3;
+  string prev_content = 4;
+}
+
+message DeleteFileNotFound { string path = 1; }
+message DeleteNotFile { string path = 1; string actual_type = 2; }
+message DeletePermissionDenied { string path = 1; string client_visible_error = 2; bool is_readonly = 3; }
+message DeleteFileBusy { string path = 1; }
+message DeleteRejected { string path = 1; string reason = 2; }
+message DeleteError { string path = 1; string error = 2; }
+
+message GrepResult {
+  oneof result {
+    GrepSuccess success = 1;
+    GrepError error = 2;
+  }
+}
+
+message GrepSuccess {
+  string pattern = 1;
+  string path = 2;
+  string output_mode = 3;
+  map<string, GrepUnionResult> workspace_results = 4;
+}
+
+message GrepUnionResult {
+  oneof result {
+    GrepCountResult count = 1;
+    GrepFilesResult files = 2;
+    GrepContentResult content = 3;
+  }
+}
+
+message GrepCountResult { /* counts, totalFiles, totalMatches, etc. */ }
+message GrepFilesResult { /* file list */ }
+message GrepContentResult { /* matched content */ }
+message GrepError { string error = 1; }
+
+message ReadResult {
+  oneof result {
+    ReadSuccess success = 1;
+    ReadError error = 2;
+  }
+}
+
+message ReadSuccess {
+  oneof output {
+    string content = 1;
+    bytes data = 6;
+    bytes data_blob_id = 9;
+    bytes content_blob_id = 10;
+  }
+  bool is_empty = 2;
+  bool exceeded_limit = 3;
+  uint32 total_lines = 4;
+  uint32 file_size = 5;
+  string path = 7;
+  optional ReadRange read_range = 8;
+}
+
+message ReadRange { int32 start_line = 1; int32 end_line = 2; }
+message ReadError { string error_message = 1; }
+
+message LsResult {
+  oneof result {
+    LsSuccess success = 1;
+    LsError error = 2;
+    LsRejected rejected = 3;
+    LsTimeout timeout = 4;
+  }
+}
+
+message LsSuccess { LsDirectoryNode directory_tree_root = 1; }
+message LsDirectoryNode {
+  string abs_path = 1;
+  repeated LsDirectoryNode children_dirs = 2;
+  repeated string children_files = 3;
+  bool children_were_processed = 4;
+  // 5: fullSubtreeExtensionCounts (map)
+  int32 num_files = 6;
+}
+message LsError { string path = 1; string error = 2; }
+message LsRejected { string path = 1; string reason = 2; }
+message LsTimeout { LsDirectoryNode directory_tree_root = 1; }
+
+message DiagnosticsResult {
+  oneof result {
+    DiagnosticsSuccess success = 1;
+    DiagnosticsError error = 2;
+    DiagnosticsRejected rejected = 3;
+    DiagnosticsFileNotFound file_not_found = 4;
+    DiagnosticsPermissionDenied permission_denied = 5;
+  }
+}
+
+message DiagnosticsSuccess { string path = 1; /* diagnostics, total_diagnostics */ }
+message DiagnosticsError { string path = 1; string error = 2; }
+message DiagnosticsRejected { string path = 1; string reason = 2; }
+message DiagnosticsFileNotFound { string path = 1; }
+message DiagnosticsPermissionDenied { string path = 1; }
+
+message RequestContextResult {} // OS, CWD, shell, timezone etc. - encoded ad-hoc
+message McpResult {} // MCP tool result
+message BackgroundShellSpawnResult {}
+message ListMcpResourcesExecResult {}
+message ReadMcpResourceExecResult {}
+message FetchResult {}
+message RecordScreenResult {}
+message ComputerUseResult {}
+message WriteShellStdinResult {}
+message ExecuteHookResult {}
+message SubagentResult {}
+
+// ============================================================================
+// Below: aiserver.v1 — Unified chat protocol (non-Agent, legacy)
+// ============================================================================
+
+message AvailableModelsResponse { 
+  message AvailableModel {
+    string name = 1;
+    bool defaultOn = 2;
+    optional bool isLongContextOnly = 3;
+    optional bool isChatOnly = 4;
+  }
+  repeated AvailableModel models = 2;
+  repeated string modelNames = 1;
+}
+
+// ClientSideToolV2 enum - from cursor_api_reference TASK-110-tool-enum-mapping.md
+enum ClientSideToolV2 {
+  CLIENT_SIDE_TOOL_V2_UNSPECIFIED = 0;
+  CLIENT_SIDE_TOOL_V2_READ_SEMSEARCH_FILES = 1;
+  CLIENT_SIDE_TOOL_V2_RIPGREP_SEARCH = 3;
+  CLIENT_SIDE_TOOL_V2_READ_FILE = 5;
+  CLIENT_SIDE_TOOL_V2_LIST_DIR = 6;
+  CLIENT_SIDE_TOOL_V2_EDIT_FILE = 7;
+  CLIENT_SIDE_TOOL_V2_FILE_SEARCH = 8;
+  CLIENT_SIDE_TOOL_V2_SEMANTIC_SEARCH_FULL = 9;
+  CLIENT_SIDE_TOOL_V2_DELETE_FILE = 11;
+  CLIENT_SIDE_TOOL_V2_REAPPLY = 12;
+  CLIENT_SIDE_TOOL_V2_RUN_TERMINAL_COMMAND_V2 = 15;
+  CLIENT_SIDE_TOOL_V2_FETCH_RULES = 16;
+  CLIENT_SIDE_TOOL_V2_WEB_SEARCH = 18;
+  CLIENT_SIDE_TOOL_V2_MCP = 19;
+  CLIENT_SIDE_TOOL_V2_SEARCH_SYMBOLS = 23;
+  CLIENT_SIDE_TOOL_V2_BACKGROUND_COMPOSER_FOLLOWUP = 24;
+  CLIENT_SIDE_TOOL_V2_KNOWLEDGE_BASE = 25;
+  CLIENT_SIDE_TOOL_V2_FETCH_PULL_REQUEST = 26;
+  CLIENT_SIDE_TOOL_V2_DEEP_SEARCH = 27;
+  CLIENT_SIDE_TOOL_V2_CREATE_DIAGRAM = 28;
+  CLIENT_SIDE_TOOL_V2_FIX_LINTS = 29;
+  CLIENT_SIDE_TOOL_V2_READ_LINTS = 30;
+  CLIENT_SIDE_TOOL_V2_GO_TO_DEFINITION = 31;
+  CLIENT_SIDE_TOOL_V2_TASK = 32;
+  CLIENT_SIDE_TOOL_V2_AWAIT_TASK = 33;
+  CLIENT_SIDE_TOOL_V2_TODO_READ = 34;
+  CLIENT_SIDE_TOOL_V2_TODO_WRITE = 35;
+  CLIENT_SIDE_TOOL_V2_EDIT_FILE_V2 = 38;
+  CLIENT_SIDE_TOOL_V2_LIST_DIR_V2 = 39;
+  CLIENT_SIDE_TOOL_V2_READ_FILE_V2 = 40;
+  CLIENT_SIDE_TOOL_V2_RIPGREP_RAW_SEARCH = 41;
+  CLIENT_SIDE_TOOL_V2_GLOB_FILE_SEARCH = 42;
+  CLIENT_SIDE_TOOL_V2_CREATE_PLAN = 43;
+  CLIENT_SIDE_TOOL_V2_LIST_MCP_RESOURCES = 44;
+  CLIENT_SIDE_TOOL_V2_READ_MCP_RESOURCE = 45;
+  CLIENT_SIDE_TOOL_V2_READ_PROJECT = 46;
+  CLIENT_SIDE_TOOL_V2_UPDATE_PROJECT = 47;
+  CLIENT_SIDE_TOOL_V2_TASK_V2 = 48;
+  CLIENT_SIDE_TOOL_V2_CALL_MCP_TOOL = 49;
+  CLIENT_SIDE_TOOL_V2_APPLY_AGENT_DIFF = 50;
+  CLIENT_SIDE_TOOL_V2_ASK_QUESTION = 51;
+  CLIENT_SIDE_TOOL_V2_SWITCH_MODE = 52;
+  CLIENT_SIDE_TOOL_V2_GENERATE_IMAGE = 53;
+  CLIENT_SIDE_TOOL_V2_COMPUTER_USE = 54;
+  CLIENT_SIDE_TOOL_V2_WRITE_SHELL_STDIN = 55;
+}
+
+// EditFileV2Params - for write operations with long content
+message EditFileV2Params {
+  string relative_workspace_path = 1;
+  string contents_after_edit = 2;
+  bool waiting_for_file_contents = 3;
+  string streaming_content = 9;
+}
+
+// RunTerminalCommandV2Params - for terminal commands
+message RunTerminalCommandV2Params {
+  string command = 1;
+  string cwd = 2;
+  bool is_background = 3;
+}
+
+// ListDirV2Params - for directory listing
+message ListDirV2Params {
+  string directory_path = 1;
+}
+
+// ReadFileV2Params - for reading files
+message ReadFileV2Params {
+  string relative_workspace_path = 1;
+  int32 start_line_one_indexed = 2;
+  int32 end_line_one_indexed_inclusive = 3;
+}
+
+// Tool call from server - see TASK-26-tool-schemas.md ClientSideToolV2Call
+message ClientSideToolV2Call {
+  ClientSideToolV2 tool = 1;
+  string tool_call_id = 3;
+  string name = 9;
+  string raw_args = 10;
+  
+  // Typed params - these contain complete data when raw_args is truncated
+  EditFileV2Params edit_file_v2_params = 50;
+  ListDirV2Params list_dir_v2_params = 52;
+  ReadFileV2Params read_file_v2_params = 53;
+  RunTerminalCommandV2Params run_terminal_command_v2_params = 23;
+}
+
+// Tool result sent back to server - see TASK-26-tool-schemas.md ClientSideToolV2Result
+message ClientSideToolV2Result {
+  ClientSideToolV2 tool = 1;
+  string tool_call_id = 35;
+  // result oneof - we'll encode specific results inline
+}
+
+message MessageSummary {
+  string content = 1;
+  string summaryId1 = 2; 
+  string summaryId2 = 3; // uuid, equal to summaryId1
+  string previousSummaryId = 4; 
+}
+
+message MessageThinking {
+  string content = 1;
+}
+message StreamUnifiedChatWithToolsRequest {
+  message Request {
+    message Message {
+      message Image {
+        message Metadata {
+          int32 width = 1;
+          int32 height = 2;
+        }
+        bytes data = 1;
+        Metadata metadata = 2;
+      }
+      string content = 1;
+      int32 role = 2;
+      Image image = 10;
+      string messageId = 13;
+      string unknown29 = 29; // 1, only for user message
+      string summaryId = 32;
+      MessageSummary summary = 39;
+      MessageThinking thinking = 45;
+      int32 chatModeEnum = 47; // 1 for ask, 2 for agent, 3 for edit
+    }
+    message Instruction {
+      string instruction = 1;
+    }
+    message Model {
+      string name = 1;
+      bytes empty = 4;
+    }
+    message CursorSetting {
+      message Unknown6 {
+        bytes unknown1 = 1;
+        bytes unknown2 = 2;
+      }
+      string name = 1;
+      bytes unknown3 = 3;
+      Unknown6 unknown6 = 6;
+      int32 unknown8 = 8;
+      int32 unknown9 = 9;
+    }
+    message Metadata {
+      string os = 1; // win32
+      string arch = 2; // x64
+      string version = 3; // 10.0.22631
+      string path = 4; // C:\Program Files\PowerShell\7\pwsh.exe
+      string timestamp = 5; // 2025-03-03T13:10:08.590Z
+    }
+    message MessageId {
+      string messageId = 1;
+      string summaryId = 2;
+      int32 role = 3;
+    }
+
+    repeated Message messages = 1;
+    int32 unknown2 = 2; // 1
+    Instruction instruction = 3;
+    int32 unknown4 = 4; // 1
+    Model model = 5;
+    repeated string wikiTool = 7; // one url one item
+    string webTool = 8; // "full search"
+    int32 unknown13 = 13;
+    CursorSetting cursorSetting = 15;
+    int32 unknown19 = 19; // 1
+    int32 unknown22 = 22; // 1
+    string conversationId = 23; // uuid
+    Metadata metadata = 26;
+    bool isAgentic = 27; // true for agent mode - see TASK-7-protobuf-schemas.md
+    repeated ClientSideToolV2 supportedTools = 29; // Agent mode tools - see TASK-7
+    repeated MessageId messageIds = 30;
+    int32 largeContext = 35; // 1
+    int32 unknown38 = 38; // 0
+  }
+  
+  Request request = 1;
+}
+
+// StreamUnifiedChatResponse - see TASK-7-protobuf-schemas.md
+// Main response message from StreamUnifiedChatWithTools
+message StreamUnifiedChatWithToolsResponse {
+  // Legacy text field - may not be used anymore
+  string text = 1;
+  
+  // Server bubble ID
+  string server_bubble_id = 22;
+  
+  // Message content - field 2 is now a nested message, not a string
+  message Message {
+    string content = 1;
+  }
+  Message message = 2;
+  
+  int32 debugging_only_token_count = 3;
+  
+  // Thinking/reasoning - field 25
+  message Thinking {
+    string content = 1;
+  }
+  Thinking thinking = 25;
+  
+  // Tool calls - see TASK-26-tool-schemas.md
+  // tool_call_v2 at field 36
+  message ToolCallV2 {
+    ClientSideToolV2 tool = 1;
+    string tool_call_id = 3;
+    string name = 9;
+    string raw_args = 10;
+  }
+  ToolCallV2 tool_call_v2 = 36;
+  
+  // Legacy tool call at field 13
+  message ToolCallV1 {
+    string tool_call_id = 1;
+    string name = 2;
+    string arguments = 3;
+  }
+  ToolCallV1 tool_call = 13;
+}
