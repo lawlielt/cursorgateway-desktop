@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, dialog, shell } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -118,11 +118,36 @@ function stopServer() {
 }
 
 function runLoginFlow() {
-  if (loginProc) return;
+  if (loginProc) {
+    dialog.showMessageBox({ message: '登录流程已在进行中，请完成浏览器登录。' });
+    return;
+  }
+
   loginProc = spawnNodeScript(loginEntry);
   let out = '';
-  loginProc.stdout.on('data', d => { out += d.toString(); console.log(`[login] ${d}`); });
-  loginProc.stderr.on('data', d => { out += d.toString(); console.error(`[login] ${d}`); });
+  let opened = false;
+
+  dialog.showMessageBox({
+    type: 'info',
+    title: 'Cursor 登录',
+    message: '正在启动登录流程',
+    detail: '稍后会自动打开浏览器登录链接；若未弹出，请查看结果弹窗中的 URL 手动打开。'
+  });
+
+  const onChunk = (d) => {
+    const t = d.toString();
+    out += t;
+    if (!opened) {
+      const m = out.match(/https?:\/\/\S+/);
+      if (m) {
+        opened = true;
+        shell.openExternal(m[0]).catch(() => {});
+      }
+    }
+  };
+
+  loginProc.stdout.on('data', d => { console.log(`[login] ${d}`); onChunk(d); });
+  loginProc.stderr.on('data', d => { console.error(`[login] ${d}`); onChunk(d); });
   loginProc.on('exit', () => {
     dialog.showMessageBox({
       title: 'Cursor 登录结果',
