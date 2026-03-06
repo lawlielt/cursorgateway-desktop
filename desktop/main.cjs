@@ -248,10 +248,15 @@ function writeClaudeCodeConfig() {
     }
 
     conf.env = conf.env || {};
+    // align with user's preferred Claude Code gateway config
+    conf.env.ANTHROPIC_AUTH_TOKEN = conf.env.ANTHROPIC_AUTH_TOKEN || 'unused';
     conf.env.ANTHROPIC_BASE_URL = getBaseURL();
-    conf.env.ANTHROPIC_API_KEY = conf.env.ANTHROPIC_API_KEY || 'unused';
+    conf.env.ANTHROPIC_DEFAULT_OPUS_MODEL = 'claude-opus-4-6';
     conf.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = conf.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC || '1';
-    conf.model = conf.model || 'claude-4.5-sonnet';
+    conf.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS = conf.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS || '12000';
+
+    // force opus by default for one-click import
+    conf.model = 'opus';
 
     fs.writeFileSync(settingsPath, JSON.stringify(conf, null, 2), 'utf8');
     return { ok: true, path: settingsPath, baseURL: getBaseURL() };
