@@ -1,6 +1,6 @@
 {
   "name": "cursor-gateway",
-  "version": "3.0.17",
+  "version": "3.0.25",
   "description": "Cursor AI models as standard OpenAI/Anthropic API — multi-client gateway with agent mode",
   "author": "",
   "private": false,
@@ -50,6 +50,6 @@
       ],
       "category": "public.app-category.developer-tools"
     },
-    "artifactName": "${productName}-${version}-${arch}.${ext}"
+    "artifactName": "--."
   }
 }
