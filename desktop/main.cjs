@@ -218,13 +218,19 @@ function runLoginFlow() {
   });
 }
 
+function fetchWithTimeout(url, opts = {}, timeoutMs = 4000) {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...opts, signal: controller.signal }).finally(() => clearTimeout(t));
+}
+
 async function check(pathname) {
   const url = `${getBaseURL()}${pathname}`;
   try {
     const tokenPath = fs.existsSync(runtimeTokenFile) ? runtimeTokenFile : (fs.existsSync(legacyTokenFile) ? legacyTokenFile : null);
     const token = tokenPath ? fs.readFileSync(tokenPath, 'utf8').trim() : '';
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const r = await fetch(url, { headers });
+    const r = await fetchWithTimeout(url, { headers }, 4000);
     const text = await r.text();
     return { ok: true, url, status: r.status, body: text };
   } catch (e) {
@@ -276,12 +282,17 @@ function openPanel() {
   win = new BrowserWindow({
     width: 560,
     height: 700,
+    show: false,
     title: 'Cursor Gateway Desktop',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false
     }
+  });
+  win.once('ready-to-show', () => {
+    win.show();
+    win.focus();
   });
   win.loadFile(path.join(__dirname, 'renderer.html'));
 }
@@ -361,25 +372,25 @@ app.whenReady().then(() => {
     return { ok: true, port: currentPort, baseURL: getBaseURL() };
   });
 
+  // Safe startup: open window first to avoid Dock bouncing perception
+  openPanel();
+  app.focus();
+  startServer();
+
   tray = new Tray(nativeImage.createEmpty());
   tray.setTitle('CG');
   tray.setToolTip('Cursor Gateway Desktop');
   tray.on('click', openPanel);
   refreshMenu();
-  startServer();
-  openPanel();
-  app.focus();
 
   setTimeout(() => {
-    openPanel();
     const t = tokenStatus();
     const guideDismissed = getGuideDismissed();
     if (!firstRunGuideShown && !guideDismissed && !t.ok) {
       firstRunGuideShown = true;
-      // panel already opened; keep non-blocking guide behavior
       setGuideDismissed(true);
     }
-  }, 1400);
+  }, 1200);
 });
 
 app.on('before-quit', () => {
