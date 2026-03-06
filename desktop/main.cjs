@@ -206,10 +206,12 @@ function runLoginFlow() {
   loginProc.stdout.on('data', d => { console.log(`[login] ${d}`); onChunk(d); });
   loginProc.stderr.on('data', d => { console.error(`[login] ${d}`); onChunk(d); });
   loginProc.on('exit', () => {
+    const ok = /Login successfully!/i.test(out) || /Your Cursor token:/i.test(out);
     dialog.showMessageBox({
+      type: ok ? 'info' : 'warning',
       title: 'Cursor 登录结果',
-      message: '登录流程已结束',
-      detail: out.slice(-3500) || '无输出'
+      message: ok ? '登录成功' : '登录流程已结束',
+      detail: ok ? '已完成登录并保存凭证。你现在可以点击“状态检测”确认。' : '请重试登录，或查看终端日志排查。'
     });
     loginProc = null;
     refreshMenu();
