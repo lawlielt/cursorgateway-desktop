@@ -5,6 +5,8 @@ const fs = require('fs');
 
 let tray;
 let win;
+let bootWin;
+let bootReady = false;
 let serverProc = null;
 let loginProc = null;
 let firstRunGuideShown = false;
@@ -273,6 +275,29 @@ function writeClaudeCodeConfig() {
   }
 }
 
+
+function openBootWindow() {
+  if (bootWin && !bootWin.isDestroyed()) return;
+  bootWin = new BrowserWindow({
+    width: 420,
+    height: 220,
+    show: true,
+    frame: false,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    alwaysOnTop: true,
+    title: 'Cursor Gateway Desktop - Starting',
+    webPreferences: { contextIsolation: true, nodeIntegration: false }
+  });
+  bootWin.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(`<!doctype html><html><body style="margin:0;background:#0b1020;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;align-items:center;justify-content:center"><div style="width:340px"><div style="font-size:18px;font-weight:600;margin-bottom:10px">Cursor Gateway Desktop</div><div id="txt" style="opacity:.85;font-size:13px;margin-bottom:12px">正在启动应用，请稍候…</div><div style="height:8px;background:#1f2937;border-radius:999px;overflow:hidden"><div style="height:100%;width:40%;background:linear-gradient(90deg,#22d3ee,#6366f1);animation:move 1.2s ease-in-out infinite"></div></div><style>@keyframes move{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}</style></div></body></html>`));
+}
+
+function closeBootWindow() {
+  if (bootWin && !bootWin.isDestroyed()) bootWin.close();
+  bootWin = null;
+}
+
 function openPanel() {
   if (win && !win.isDestroyed()) {
     win.show();
@@ -291,6 +316,8 @@ function openPanel() {
     }
   });
   win.once('ready-to-show', () => {
+    bootReady = true;
+    closeBootWindow();
     win.show();
     win.focus();
   });
@@ -327,6 +354,20 @@ function refreshMenu() {
 }
 
 app.whenReady().then(() => {
+  openBootWindow();
+
+  // startup watchdog: if main panel not ready in 8s, show guidance
+  setTimeout(() => {
+    if (!bootReady) {
+      dialog.showMessageBox({
+        type: 'info',
+        title: '启动中',
+        message: '应用仍在初始化（首次启动可能较慢）',
+        detail: `若持续无响应，可查看日志：${path.join(app.getPath('userData'), 'desktop-crash.log')}`
+      });
+    }
+  }, 8000);
+
   const saved = getSavedPort();
   if (saved) currentPort = saved;
   ipcMain.handle('gateway:check', (_, p) => check(p || '/health'));
@@ -396,4 +437,5 @@ app.whenReady().then(() => {
 app.on('before-quit', () => {
   stopServer();
   if (loginProc) loginProc.kill('SIGTERM');
+  closeBootWindow();
 });
