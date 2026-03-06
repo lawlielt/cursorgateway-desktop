@@ -134,7 +134,7 @@ function tokenStatus() {
 
 function spawnNodeScript(entry) {
   return spawn(process.execPath, [entry], {
-    cwd: runtimeCwd,
+    cwd: app.getPath('userData'),
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: '1',
@@ -149,32 +149,17 @@ function spawnNodeScript(entry) {
 
 
 
-function startServerEmbedded() {
-  if (serverProc) return;
-  process.env.PORT = String(currentPort);
-  process.env.CURSOR_GATEWAY_SESSIONS_DIR = path.join(app.getPath('userData'), 'sessions');
-  process.env.CURSOR_GATEWAY_LOG_FILE = path.join(app.getPath('userData'), 'server.log');
-  process.env.CURSOR_GATEWAY_TOKEN_FILE = runtimeTokenFile;
-  try {
-    require(serverEntry);
-    serverProc = { embedded: true, kill: () => {} };
-    refreshMenu();
-    console.log('[desktop] Server started in embedded mode');
-  } catch (e) {
-    console.error('[desktop] Embedded server start failed:', e);
-  }
-}
-
 function startServer() {
   startupStage = 'start-server';
   if (serverProc) return;
-  if (app.isPackaged) {
-    startServerEmbedded();
-    return;
-  }
+
+  // always run gateway in child process to keep Electron main thread responsive
   serverProc = spawnNodeScript(serverEntry);
   serverProc.stdout.on('data', d => console.log(`[server] ${d}`));
   serverProc.stderr.on('data', d => console.error(`[server] ${d}`));
+  serverProc.on('error', (err) => {
+    console.error('[server] spawn error:', err);
+  });
   serverProc.on('exit', (code, sig) => {
     console.log(`[server] exited code=${code} sig=${sig}`);
     serverProc = null;
@@ -185,10 +170,6 @@ function startServer() {
 
 function stopServer() {
   if (!serverProc) return;
-  if (serverProc.embedded) {
-    dialog.showMessageBox({ message: '桌面版为内置服务模式，无需单独停止。退出应用后服务会自动结束。' });
-    return;
-  }
   serverProc.kill('SIGTERM');
   serverProc = null;
   refreshMenu();
@@ -434,26 +415,16 @@ app.whenReady().then(() => {
     if (n < 1 || n > 65535) return { ok: false, error: '端口范围应在 1-65535' };
 
     const wasRunning = !!serverProc;
-    const wasEmbedded = !!(serverProc && serverProc.embedded);
 
     currentPort = p;
     setSavedPort(p);
     process.env.PORT = p;
     refreshMenu();
 
-    if (wasRunning && !wasEmbedded) {
+    if (wasRunning) {
       stopServer();
       setTimeout(() => startServer(), 300);
       return { ok: true, port: currentPort, baseURL: getBaseURL(), restarted: true };
-    }
-
-    if (wasRunning && wasEmbedded) {
-      // packaged embedded mode: relaunch app to apply new port reliably
-      setTimeout(() => {
-        app.relaunch();
-        app.exit(0);
-      }, 200);
-      return { ok: true, port: currentPort, baseURL: getBaseURL(), relaunched: true };
     }
 
     return { ok: true, port: currentPort, baseURL: getBaseURL() };
