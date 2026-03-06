@@ -186,7 +186,7 @@ function startServer() {
 function stopServer() {
   if (!serverProc) return;
   if (serverProc.embedded) {
-    dialog.showMessageBox({ message: '嵌入模式下暂不支持停止服务，请退出应用后重启。' });
+    dialog.showMessageBox({ message: '桌面版为内置服务模式，无需单独停止。退出应用后服务会自动结束。' });
     return;
   }
   serverProc.kill('SIGTERM');
