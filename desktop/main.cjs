@@ -10,6 +10,8 @@ let bootReady = false;
 let serverProc = null;
 let loginProc = null;
 let firstRunGuideShown = false;
+let startupRecovered = false;
+let startupStage = 'init';
 
 const appRoot = path.resolve(__dirname, '..');
 const serverEntry = path.join(appRoot, 'src', 'app.js');
@@ -40,6 +42,22 @@ process.on('unhandledRejection', (err) => {
   console.error('[desktop] unhandledRejection', err);
 });
 
+
+
+function startupReport() {
+  const tokenPath = fs.existsSync(runtimeTokenFile)
+    ? runtimeTokenFile
+    : (fs.existsSync(legacyTokenFile) ? legacyTokenFile : '(missing)');
+  return {
+    appVersion: app.getVersion(),
+    port: currentPort,
+    baseURL: getBaseURL(),
+    startupStage,
+    startupRecovered,
+    tokenPath,
+    crashLog: path.join(app.getPath('userData'), 'desktop-crash.log')
+  };
+}
 
 function prefFilePath() {
   return path.join(app.getPath('userData'), 'prefs.json');
@@ -148,6 +166,7 @@ function startServerEmbedded() {
 }
 
 function startServer() {
+  startupStage = 'start-server';
   if (serverProc) return;
   if (app.isPackaged) {
     startServerEmbedded();
@@ -299,6 +318,7 @@ function closeBootWindow() {
 }
 
 function openPanel() {
+  startupStage = 'open-panel';
   if (win && !win.isDestroyed()) {
     win.show();
     win.focus();
@@ -356,14 +376,18 @@ function refreshMenu() {
 app.whenReady().then(() => {
   openBootWindow();
 
-  // startup watchdog: if main panel not ready in 8s, show guidance
+  // startup watchdog: if slow, auto-recover service once
   setTimeout(() => {
-    if (!bootReady) {
+    const notReady = !win || win.isDestroyed() || !win.isVisible();
+    if (notReady) {
+      startupRecovered = true;
+      try { stopServer(); } catch {}
+      setTimeout(() => startServer(), 300);
       dialog.showMessageBox({
         type: 'info',
-        title: '启动中',
-        message: '应用仍在初始化（首次启动可能较慢）',
-        detail: `若持续无响应，可查看日志：${path.join(app.getPath('userData'), 'desktop-crash.log')}`
+        title: '启动较慢，已自动恢复',
+        message: '已自动重试服务启动一次',
+        detail: `可点击“复制诊断信息”提供排障。日志：${path.join(app.getPath('userData'), 'desktop-crash.log')}`
       });
     }
   }, 8000);
@@ -375,11 +399,13 @@ app.whenReady().then(() => {
   ipcMain.handle('gateway:stop', () => { stopServer(); return { ok: true }; });
   ipcMain.handle('gateway:login', () => { runLoginFlow(); return { ok: true }; });
   ipcMain.handle('gateway:status', async () => {
+    startupStage = 'status-check';
     const t = tokenStatus();
     const h = await check('/health');
     return { token: t, health: h, port: currentPort, baseURL: getBaseURL() };
   });
   ipcMain.handle('gateway:get-config', async () => ({ port: currentPort, baseURL: getBaseURL() }));
+  ipcMain.handle('gateway:diagnostics', async () => startupReport());
   ipcMain.handle('gateway:import-claude', async () => writeClaudeCodeConfig());
   ipcMain.handle('gateway:set-port', async (_e, portVal) => {
     const p = String(portVal || '').trim();
@@ -414,9 +440,15 @@ app.whenReady().then(() => {
   });
 
   // Safe startup: open window first to avoid Dock bouncing perception
+  startupStage = 'boot-window';
   openPanel();
   app.focus();
-  startServer();
+
+  // defer service start slightly so user sees UI immediately
+  setTimeout(() => {
+    startupStage = 'boot-start-server';
+    startServer();
+  }, 150);
 
   tray = new Tray(nativeImage.createEmpty());
   tray.setTitle('CG');

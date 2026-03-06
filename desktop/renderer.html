@@ -93,6 +93,7 @@
       <button class="warn" onclick="stop()">停止服务</button>
       <button class="primary" onclick="login()">Cursor 登录</button>
       <button onclick="importClaude()">一键导入 Claude Code 配置</button>
+      <button onclick="copyDiagnostics()">复制诊断信息</button>
     </div>
     <div class="row">
       <button onclick="status()">状态检测</button>
@@ -134,6 +135,14 @@
     }
     async function stop(){ await window.gateway.stop(); document.getElementById('out').textContent='已请求停止'; }
     async function login(){ await window.gateway.login(); document.getElementById('out').textContent='已启动登录流程，请按弹窗结果操作'; }
+    async function copyDiagnostics(){
+      const out = document.getElementById('out');
+      const d = await window.gateway.diagnostics();
+      const txt = JSON.stringify(d, null, 2);
+      try { await navigator.clipboard.writeText(txt); out.textContent = "已复制诊断信息到剪贴板\n\n" + txt; }
+      catch(e){ out.textContent = "复制失败，请手动复制：\n\n" + txt; }
+    }
+
     async function importClaude(){
       const out = document.getElementById('out');
       out.textContent = '正在导入 Claude Code 配置...';
