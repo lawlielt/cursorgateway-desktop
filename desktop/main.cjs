@@ -300,7 +300,7 @@ function openBootWindow() {
   bootWin = new BrowserWindow({
     width: 420,
     height: 220,
-    show: true,
+    show: false,
     frame: false,
     resizable: false,
     minimizable: false,
@@ -310,7 +310,31 @@ function openBootWindow() {
     title: 'Cursor Gateway Desktop - Starting',
     webPreferences: { contextIsolation: true, nodeIntegration: false }
   });
-  bootWin.loadFile(path.join(__dirname, 'boot.html'));
+
+  const html = `<!doctype html><html><head><meta charset="utf-8"><style>
+    html,body{margin:0;height:100%;background:#0b1020;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif}
+    .wrap{height:100%;display:flex;align-items:center;justify-content:center}
+    .card{width:340px}
+    .title{font-size:18px;font-weight:700;margin-bottom:10px}
+    .sub{opacity:.86;font-size:13px;margin-bottom:12px}
+    .bar{height:8px;background:#1f2937;border-radius:999px;overflow:hidden}
+    .fill{height:100%;width:40%;background:linear-gradient(90deg,#22d3ee,#6366f1);animation:move 1.2s ease-in-out infinite}
+    @keyframes move{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
+  </style></head><body><div class="wrap"><div class="card"><div class="title">Cursor Gateway Desktop</div><div class="sub">正在启动中，请稍候…</div><div class="bar"><div class="fill"></div></div></div></div></body></html>`;
+
+  bootWin.once('ready-to-show', () => {
+    if (!bootWin.isDestroyed()) {
+      bootWin.show();
+      bootWin.focus();
+    }
+  });
+
+  bootWin.webContents.on('did-fail-load', () => {
+    // fallback to local file if data URL fails for any reason
+    if (!bootWin.isDestroyed()) bootWin.loadFile(path.join(__dirname, 'boot.html')).catch(() => {});
+  });
+
+  bootWin.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
 }
 
 function closeBootWindow() {
