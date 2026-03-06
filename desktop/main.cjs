@@ -306,10 +306,11 @@ function openBootWindow() {
     minimizable: false,
     maximizable: false,
     alwaysOnTop: true,
+    backgroundColor: '#0b1020',
     title: 'Cursor Gateway Desktop - Starting',
     webPreferences: { contextIsolation: true, nodeIntegration: false }
   });
-  bootWin.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(`<!doctype html><html><body style="margin:0;background:#0b1020;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;align-items:center;justify-content:center"><div style="width:340px"><div style="font-size:18px;font-weight:600;margin-bottom:10px">Cursor Gateway Desktop</div><div id="txt" style="opacity:.85;font-size:13px;margin-bottom:12px">正在启动应用，请稍候…</div><div style="height:8px;background:#1f2937;border-radius:999px;overflow:hidden"><div style="height:100%;width:40%;background:linear-gradient(90deg,#22d3ee,#6366f1);animation:move 1.2s ease-in-out infinite"></div></div><style>@keyframes move{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}</style></div></body></html>`));
+  bootWin.loadFile(path.join(__dirname, 'boot.html'));
 }
 
 function closeBootWindow() {
@@ -383,12 +384,7 @@ app.whenReady().then(() => {
       startupRecovered = true;
       try { stopServer(); } catch {}
       setTimeout(() => startServer(), 300);
-      dialog.showMessageBox({
-        type: 'info',
-        title: '启动较慢，已自动恢复',
-        message: '已自动重试服务启动一次',
-        detail: `可点击“复制诊断信息”提供排障。日志：${path.join(app.getPath('userData'), 'desktop-crash.log')}`
-      });
+      console.warn('[startup] slow start detected, auto-recovered once');
     }
   }, 8000);
 
