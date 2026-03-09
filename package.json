@@ -1,7 +1,7 @@
 {
   "name": "cursor-gateway",
   "version": "1.0.0",
-  "description": "Cursor AI models as standard OpenAI/Anthropic API — multi-client gateway with agent mode",
+  "description": "Cursor AI models as standard OpenAI/Anthropic API \u2014 multi-client gateway with agent mode",
   "author": "",
   "private": false,
   "main": "desktop/main.cjs",
@@ -26,7 +26,8 @@
     "start:server": "node src/app.js",
     "dev:app": "electron .",
     "dist:app": "electron-builder --mac dmg --publish never",
-    "package:app": "npm install && npm run dist:app"
+    "package:app": "npm install && npm run dist:app",
+    "dist:win": "electron-builder --win nsis --x64 --publish never"
   },
   "devDependencies": {
     "protobufjs-cli": "^1.1.3",
@@ -50,6 +51,19 @@
       ],
       "category": "public.app-category.developer-tools"
     },
-    "artifactName": "${productName}-${version}-${arch}.${ext}"
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "${productName}-${version}-setup-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }
