@@ -1,7 +1,7 @@
 {
   "name": "cursor-gateway",
   "version": "1.0.0",
-  "description": "Cursor AI models as standard OpenAI/Anthropic API \u2014 multi-client gateway with agent mode",
+  "description": "Desktop gateway for Cursor with OpenAI/Anthropic-compatible APIs (macOS + Windows)",
   "author": "",
   "private": false,
   "main": "desktop/main.cjs",
