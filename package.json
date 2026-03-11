@@ -27,7 +27,8 @@
     "dev:app": "electron .",
     "dist:app": "electron-builder --mac dmg --publish never",
     "package:app": "npm install && npm run dist:app",
-    "dist:win": "electron-builder --win nsis --x64 --publish never"
+    "dist:win": "electron-builder --win nsis --x64 --publish never",
+    "mr:review:gitlab": "node tools/gitlab-mr-reviewer/review-mr.mjs"
   },
   "devDependencies": {
     "protobufjs-cli": "^1.1.3",
